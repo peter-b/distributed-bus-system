@@ -5,6 +5,7 @@ import java.io.DataInputStream;
 import java.io.OutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.EOFException;
 
 /** <p>A message sent over UDP. A message consists of a payload, with
  * source and destination ports.</p>
@@ -140,8 +141,12 @@ public class UDPMessage {
             buf = new byte[len];
             int read_len = 0;
             while (read_len < len) {
-                read_len += in.read(buf, read_len,
-                                    (len - read_len));
+                int status = in.read(buf, read_len,
+                                     (len - read_len));
+                if (status < 0) {
+                    throw new EOFException("Unexpected end of file reading message payload.");
+                }
+                read_len += status;
             }
         }
         return new UDPMessage(to, from, buf);
