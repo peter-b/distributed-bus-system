@@ -128,7 +128,8 @@ public class BluetoothConnectionManager implements BusConnectionServer {
         }
 
         public byte[] getLocalAddress() {
-            throw new UnsupportedOperationException();
+            /* FIXME return an address */
+            return null;
         }
     }
 
@@ -220,7 +221,7 @@ public class BluetoothConnectionManager implements BusConnectionServer {
                 }
 
             } catch (IOException e) {
-                System.err.printf("SPP server error: %1$s", e.getMessage());
+                System.err.println("SPP server error: " + e.getMessage());
             } finally {
                 if (service != null) {
                     try {
