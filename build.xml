@@ -1,0 +1,64 @@
+<project name="Java/Bluetooth clock synchronisation demo" default="compile">
+
+  <!-- Project properties -->
+  <property name="src.pc" location="pc-src"/>
+  <property name="src.common" location="src"/>
+  <property name="build.pc" location="pc-build"/>
+  <property name="dist" location="dist"/>
+  <property name="lib.pc" location="pc-lib"/>
+  <property name="lib.nxt" location="nxt-lib"/>
+  <property name="lib.common" location="lib"/>
+  <property name="doc" location="doc"/>
+
+  <path id="classpath.lib.pc">
+    <fileset dir="${lib.pc}">
+      <include name="**/*.jar"/>
+    </fileset>
+    <fileset dir="${lib.common}">
+      <include name="**/*.jar"/>
+    </fileset>
+  </path>
+
+  <path id="srcpath.pc">
+    <pathelement path="${src.pc}"/>
+    <pathelement path="${src.common}"/>
+  </path>
+
+  <path id="run.classpath">
+    <path refid="classpath.lib.pc"/>
+    <pathelement path="${build.pc}"/>
+  </path>
+
+  <!-- Compilation targets -->
+  <target name="compile.pc" description="Compile Java source code">
+    <mkdir dir="${build.pc}"/>
+    <javac destdir="${build.pc}" classpathref="classpath.lib.pc">
+      <compilerarg value="-Xlint:unchecked"/>
+      <src refid="srcpath.pc"/>
+    </javac>
+  </target>
+
+  <target name="compile" depends="compile.pc"/>
+
+
+  <target name="doc" description="Create API documentation">
+    <mkdir dir="${doc}"/>
+    <javadoc destdir="${doc}">
+      <sourcepath refid="srcpath.pc"/>
+    </javadoc>
+  </target>
+
+  <target name="clean" description="Clean up generated files">
+    <delete dir="${build}"/>
+    <delete dir="${dist}"/>
+    <delete dir="${doc}"/>
+    <delete dir="${testreports}"/>
+  </target>
+
+  <target name="runclass" description="Run test for listing devices"
+          depends="compile">
+    <java classname="${run.classname}"
+          classpathref="run.classpath"/>
+  </target>
+
+</project>
