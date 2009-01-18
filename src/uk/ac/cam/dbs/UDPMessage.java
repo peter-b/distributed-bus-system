@@ -138,7 +138,11 @@ public class UDPMessage {
 
             /* Grab payload */
             buf = new byte[len];
-            in.read(buf);
+            int read_len = 0;
+            while (read_len < len) {
+                read_len += in.read(buf, read_len,
+                                    (len - read_len));
+            }
         }
         return new UDPMessage(to, from, buf);
     }
