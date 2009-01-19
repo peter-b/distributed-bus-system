@@ -193,7 +193,7 @@ public class BluetoothConnectionManager implements BusConnectionServer {
         serverThread = null;
     }
 
-    public static BluetoothConnectionManager getConnectionManager() {
+    public static synchronized BluetoothConnectionManager getConnectionManager() {
         if (instance == null) {
             instance = new BluetoothConnectionManager();
         }

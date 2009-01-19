@@ -54,7 +54,6 @@ public class SystemBus implements UDPMessageListener {
                 }
             }
             portBindings.addElement(new UDPBinding(service, port));
-            portBindings.size(); /* Magic */
         }
     }
 
@@ -86,7 +85,6 @@ public class SystemBus implements UDPMessageListener {
                     }
                 }
             }
-            portBindings.size(); /* Magic */
         }
     }
 
@@ -306,7 +304,7 @@ public class SystemBus implements UDPMessageListener {
      *
      * @return the global <code>SystemBus</code>.
      */
-    public static SystemBus getSystemBus() {
+    public static synchronized SystemBus getSystemBus() {
         if (instance == null) {
             instance = new SystemBus();
         }

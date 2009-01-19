@@ -253,7 +253,7 @@ public class TCPIPConnectionManager implements BusConnectionServer {
      *
      * @return the global <code>TCPIPConnectionManager</code>.
      */
-    public static TCPIPConnectionManager getConnectionManager() {
+    public static synchronized TCPIPConnectionManager getConnectionManager() {
         if (instance == null) {
             instance = new TCPIPConnectionManager();
         }
