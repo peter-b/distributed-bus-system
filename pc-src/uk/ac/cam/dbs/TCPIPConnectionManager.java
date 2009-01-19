@@ -11,18 +11,19 @@ import java.io.FilterInputStream;
 import java.io.OutputStream;
 import java.io.FilterOutputStream;
 
-/** Manages bus connections tunnelled over TCP/IP.
+/** <p>Manages bus connections tunnelled over TCP/IP.</p>
  *
- * The single <code>TCPIPConnectionManager<code> instance, obtained
+ * <p>The single <code>TCPIPConnectionManager</code> instance, obtained
  * via <code>getConnectionManager()</code>, provides a way of
  * tunnelling the distributed bus over TCP/IP links (e.g. the
- * Internet).
+ * Internet).</p>
  *
- * It provides ways of initiating connections to remote devices as
+ * <p>It provides ways of initiating connections to remote devices as
  * well as a service for listening for incoming connections (the
- * default TCP port is 51992).
+ * default TCP port is 51992).</p>
  *
- * FIXME Do something more sensible WRT shutting down server thread.
+ * <p>FIXME Do something more sensible WRT shutting down server
+ * thread.</p>
  *
  * @see SystemBus
  * @see #getConnectionManager()
@@ -237,8 +238,8 @@ public class TCPIPConnectionManager implements BusConnectionServer {
 
     /* ************************************************** */
 
-    /** Create a new TCPIPConnectionManager. Do not call this
-     * directly: use getConnectionManager().
+    /** Create a new <code>TCPIPConnectionManager</code>. Do not call
+     * this directly: use <code>getConnectionManager()</code>.
      *
      * @see #getConnectionManager()
      */

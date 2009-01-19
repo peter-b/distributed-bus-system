@@ -8,19 +8,20 @@ import java.io.OutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 
-/** Manages global distributed bus state.
+/** <p>Manages global distributed bus state.</p>
  *
- * The single <code>SystemBus</code> instance, obtained via
+ * <p>The single <code>SystemBus</code> instance, obtained via
  * <code>getSystemBus()</code>, contains the global state of the
  * distributed bus system. It provides methods for sending and
  * receiving UDP messages, and registering and removing connections
- * from being managed by the distributed bus.
+ * from being managed by the distributed bus.</p>
  *
- * The bus system provides a low-level packet multiplexing service
+ * <p>The bus system provides a low-level packet multiplexing service
  * that allows multiple "services" to transparently share the same
  * connections. In order to do this, it runs one thread per
  * <code>BusConnection</code> which polls for incoming messages and
- * dispatches them to the appropriate <code>UDPMessageListener</code>.
+ * dispatches them to the appropriate
+ * <code>UDPMessageListener</code>.</p>
  *
  * @see #getSystemBus()
  * @see BusConnection

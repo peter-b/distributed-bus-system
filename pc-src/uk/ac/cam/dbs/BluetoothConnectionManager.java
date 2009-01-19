@@ -10,7 +10,20 @@ import java.io.FilterInputStream;
 import java.io.OutputStream;
 import java.io.FilterOutputStream;
 
-/* FIXME Do something more sensible WRT shutting down server thread. */
+/** <p>Manages Bluetooth-based bus connections.</p>
+ *
+ * <p> The single <code>BluetoothConnectionManager</code>, obtained
+ * via <code>getConnectionManager()</code>, provides services for
+ * creating distributed bus connections over Bluetooth.</p>
+ *
+ * <p>It is designed to be compatible with the LEGO Mindstorms NXT.</p>
+ *
+ * <p>FIXME Do something more sensible WRT shutting down server
+ * thread.</p>
+ *
+ * @see SystemBus
+ * @see #getConnectionManager()
+ */
 public class BluetoothConnectionManager implements BusConnectionServer {
 
     /** The default RFCOMM channel to use */
@@ -21,7 +34,13 @@ public class BluetoothConnectionManager implements BusConnectionServer {
 
     /* ************************************************** */
 
-    /** Connect to a remote Bluetooth device */
+    /** Connect to a remote Bluetooth device.
+     *
+     * @param bdAddress The 48-bit Bluetooth address of the device to
+     *                  connect to, as a hexadecimal string.
+     *
+     * @return a newly-established <code>BusConnection</code>.
+     */
     public BusConnection connectDevice(String bdAddress)
         throws IOException {
 
@@ -97,7 +116,14 @@ public class BluetoothConnectionManager implements BusConnectionServer {
 
     private Thread serverThread;
 
-    /** Set whether connections are accepted from other devices. */
+    /** <p>Set whether connections are accepted from other devices.</p>
+     *
+     * <p>If <code>enabled</code> is <code>true</code>, accept
+     * incoming connections on RFCOMM channel 1.</p>
+     *
+     * @param enabled If <code>true</code>, listen and accept incoming
+     *                Bluetooth connections.
+     */
     public synchronized void setListenEnabled(boolean enabled) {
 
         if (!enabled) {
@@ -189,10 +215,19 @@ public class BluetoothConnectionManager implements BusConnectionServer {
 
     private static BluetoothConnectionManager instance = null;
 
+    /** Create a new <code>BluetoothConnectionManager</code>. Do not
+     * call this directly: use <code>getConnectionManager()</code>.
+     *
+     * @see #getConnectionManager()
+     */
     protected BluetoothConnectionManager() {
         serverThread = null;
     }
 
+    /** Get the Bluetooth connection manager
+     *
+     * @return the global <code>BluetoothConnectionManager</code>.
+     */
     public static synchronized BluetoothConnectionManager getConnectionManager() {
         if (instance == null) {
             instance = new BluetoothConnectionManager();
