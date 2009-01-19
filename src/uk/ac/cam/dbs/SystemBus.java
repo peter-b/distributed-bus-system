@@ -1,7 +1,6 @@
 package uk.ac.cam.dbs;
 
 import java.util.Vector;
-import java.net.BindException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,9 +38,10 @@ public class SystemBus implements UDPMessageListener {
      *                for <code>port</code>.
      * @param port    The port number that service wishes to listen on.
      *
-     * @throws BindException if the <code>port</code> has already been bound.
-     * */
-    public void addUDPService(UDPMessageListener service, int port) throws BindException {
+     * @throws UDPBindException if the <code>port</code> has already
+     *                          been bound.
+     */
+    public void addUDPService(UDPMessageListener service, int port) throws UDPBindException {
         if (service == null) {
             throw new IllegalArgumentException ("Invalid service");
         }
@@ -50,7 +50,8 @@ public class SystemBus implements UDPMessageListener {
             for (int i = 0; i < portBindings.size(); i++) {
                 UDPBinding b = (UDPBinding) portBindings.elementAt(i);
                 if (port == b.port) {
-                    throw new BindException("Port in use");
+                    throw new UDPBindException("Port " + Integer.toString(port) +
+                                               " in use");
                 }
             }
             portBindings.addElement(new UDPBinding(service, port));

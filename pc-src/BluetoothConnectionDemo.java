@@ -8,8 +8,6 @@ import java.util.ConcurrentModificationException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
-import java.net.BindException;
-
 import javax.bluetooth.LocalDevice;
 import javax.bluetooth.BluetoothStateException;
 
@@ -118,7 +116,7 @@ public class BluetoothConnectionDemo {
 
                     Thread.sleep(LOOP_DELAY);
                 }
-            } catch (BindException e) {
+            } catch (UDPBindException e) {
                 System.err.printf("Failed to bind UDP port: %1$s\n", e.getMessage());
             } catch (Exception e) {
                 /* Yawn */

@@ -23,7 +23,7 @@ public class SdnvDataInputStream
             if (i >= 8) overflow = true;
         }
         if (overflow)
-            throw new ArithmeticException("SDNVs of more than 9 octets are not supported");
+            throw new IOException("SDNVs of more than 9 octets are not supported");
         return x;
     }
 }
