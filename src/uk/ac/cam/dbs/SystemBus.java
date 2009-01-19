@@ -170,7 +170,12 @@ public class SystemBus implements UDPMessageListener {
     private Vector connections;
     private Vector connectionMonitors;
 
-    /** Get a list of active connections.
+    /** <p>Get a list of active connections.</p>
+     *
+     * <p><b>Warning:</b> the <code>Vector</code> returned by this
+     * call is owned by the <code>SystemBus<code> instance, and should
+     * not be modified.</p>
+     *
      * @return a <code>Vector</code> of
      *         <code>BusConnection</code>s.
      */
@@ -189,9 +194,6 @@ public class SystemBus implements UDPMessageListener {
         if (connection == null)
             throw new NullPointerException();
 
-        UDPMonitor m = new UDPMonitor(connection);
-        m.start();
-
         synchronized (connections) {
             for (int i = 0; i < connections.size(); i++) {
                 if (connection == connections.elementAt(i)) {
@@ -199,6 +201,11 @@ public class SystemBus implements UDPMessageListener {
                 }
             }
             connections.addElement(connection);
+        }
+
+        synchronized (connectionMonitors) {
+            UDPMonitor m = new UDPMonitor(connection);
+            (new Thread(m)).start();
             connectionMonitors.addElement(m);
         }
     }
@@ -217,69 +224,65 @@ public class SystemBus implements UDPMessageListener {
         if (connection == null)
             throw new NullPointerException();
 
-        UDPMonitor m = null;
-
-        synchronized (connectionMonitors) {
-            for (int i = 0; i < connectionMonitors.size(); i++) {
-                m = (UDPMonitor) connectionMonitors.elementAt(i);
-                if (m.conn == connection) break;
-            }
-            if (m == null) throw new IllegalStateException();
-            connectionMonitors.removeElement(m);
-        }
-
+        /* Remove the connection from the list of active
+         * connections. */
         synchronized (connections) {
             connections.removeElement(connection);
         }
 
-        /* Do teardown on connection. */
-
-        m.interrupt();
-        try {
-            m.join();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+        synchronized (connectionMonitors) {
+            for (int i = 0; i < connectionMonitors.size(); i++) {
+                UDPMonitor m = (UDPMonitor) connectionMonitors.elementAt(i);
+                if (m.conn == connection) {
+                    m.shutdown();
+                    connectionMonitors.removeElement(m);
+                    break;
+                }
+            }
         }
     }
 
     /** Monitors a BusConnection for incoming messages */
-    private class UDPMonitor extends Thread {
+    private class UDPMonitor implements Runnable {
         BusConnection conn;
+        private boolean enabled;
+        private Integer mutex;
 
         UDPMonitor(BusConnection connection) {
             super();
             conn = connection;
-
-            /* Don't let this thread keep the program running. */
-            setDaemon(true);
+            mutex = new Integer(0);
+            enabled = true;
         }
 
         public void run() {
             try {
                 InputStream in = conn.getInputStream();
                 DataInputStream din = new DataInputStream(in);
-                while (!isInterrupted()) {
+                while (true) {
                     synchronized (in) {
-                        if (in.available() == 0) {
-                            sleep(10);
-                            continue;
-                        }
                         UDPMessage msg = UDPMessage.recv(din);
                         SystemBus.this.recvUDPMessage(conn, msg);
                     }
+                    synchronized (mutex) {
+                        /* Note that shutdown() is only called from
+                         * removeConnection(), so bypass calling it
+                         * again. */
+                        if (!enabled) return;
+                    }
+                    Thread.yield();
                 }
             } catch (IOException e) {
-                try {
-                    conn.disconnect();
-                } catch (IOException e2) { }
-            } catch (InterruptedException e) {
                 /* Die */
             } finally {
                 removeConnection(conn);
             }
-            /* We only call conn.disconnect() if an IO error occurs,
-             * because we might be shutting down so that the
-             * connection can be used for something else. */
+        }
+
+        void shutdown() {
+            synchronized (mutex) {
+                enabled = false;
+            }
         }
     }
 
