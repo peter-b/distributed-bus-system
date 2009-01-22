@@ -135,7 +135,7 @@ public class BluetoothConnectionManager implements BusConnectionServer {
 
     /* ************************************************** */
 
-    private Thread serverThread;
+    private BluetoothServer server;
 
     /** <p>Set whether connections are accepted from other devices.</p>
      *
@@ -145,29 +145,17 @@ public class BluetoothConnectionManager implements BusConnectionServer {
      * @param enabled If <code>true</code>, listen and accept incoming
      *                Bluetooth connections.
      */
-    public synchronized void setListenEnabled(boolean enabled) {
-
-        if (!enabled) {
-            if (!isListenEnabled()) return;
-
-            serverThread.interrupt();
-            try {
-                serverThread.join();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+    public void setListenEnabled(boolean enabled) {
+        synchronized (server.lock) {
+            if (server.enabled == enabled) return;
+            if (enabled) {
+                server.enabled = false;
+            } else {
+                server.enabled = true;
+                Thread t = new Thread(server);
+                t.start();
             }
-            serverThread = null;
-        } else {
-            if (isListenEnabled()) return;
-
-            serverThread = new Thread (new BluetoothServer());
-
-            /* Don't let server thread keep the program running. */
-            serverThread.setDaemon(true);
-            serverThread.start();
         }
-        /* FIXME should we check the server actually has started
-         * successfully, and throw an Exception if it doesn't? */
     }
 
     /** <p>Test whether connections are accepted from other devices.</p>
@@ -175,17 +163,23 @@ public class BluetoothConnectionManager implements BusConnectionServer {
      * @return <code>true</code> if listening for incoming connections.
      */
     public boolean isListenEnabled() {
-        if (serverThread != null) {
-            return serverThread.isAlive();
-        } else {
-            return false;
+        synchronized (server.lock) {
+            return server.enabled;
         }
     }
 
     private class BluetoothServer implements Runnable {
+        boolean enabled;
+        Object lock;
+        StreamConnectionNotifier notifier;
+
+        BluetoothServer() {
+            enabled = false;
+            lock = new Object();
+            notifier = null;
+        }
 
         public void run() {
-            StreamConnectionNotifier service = null;
 
             try {
                 /* Open RFCOMM server. This does extremely badly
@@ -202,18 +196,21 @@ public class BluetoothConnectionManager implements BusConnectionServer {
                  * specifying the channel directly rather than providing a
                  * UUID, we won't get registered with the SDP at all.
                  */
-                service = (StreamConnectionNotifier)
+                notifier = (StreamConnectionNotifier)
                     Connector.open("btspp://localhost:" + Integer.toString(RFCOMM_CHANNEL)
                                    + ";authenticate=false;encrypt=false;name=" + SERVICE_NAME);
 
 
                 while (true) {
                     /* accept/open */
-                    StreamConnection conn = service.acceptAndOpen();
-                    /* If interrupted, close everything & stop */
-                    if (Thread.interrupted()) {
-                        if (conn != null) conn.close();
-                        break;
+                    StreamConnection conn = notifier.acceptAndOpen();
+                    /* If listening is no longer enabled, drop the
+                     * connection immediately. */
+                    synchronized (lock) {
+                        if (!enabled) {
+                            conn.close();
+                            break;
+                        }
                     }
                     /* Create & register bus connection */
                     BluetoothConnectionManager.this.new
@@ -221,12 +218,26 @@ public class BluetoothConnectionManager implements BusConnectionServer {
                 }
 
             } catch (IOException e) {
-                System.err.println("SPP server error: " + e.getMessage());
+                /* Only display an error message if listenning is
+                 * enabled */
+                synchronized (lock) {
+                    if (enabled) {
+                        System.err.println("SPP server error: " +
+                                           e.getMessage());
+                    }
+                }
             } finally {
-                if (service != null) {
+                /* Make sure we *always* shut down the notifier */
+                if (notifier != null) {
                     try {
-                        service.close();
-                    } catch (IOException e) { }
+                        notifier.close();
+                    } catch (IOException e) {
+                    } finally {
+                        notifier = null;
+                    }
+                }
+                synchronized (lock) {
+                    enabled = false;
                 }
             }
         }
@@ -242,7 +253,7 @@ public class BluetoothConnectionManager implements BusConnectionServer {
      * @see #getConnectionManager()
      */
     protected BluetoothConnectionManager() {
-        serverThread = null;
+        server = new BluetoothServer();
     }
 
     /** Get the Bluetooth connection manager

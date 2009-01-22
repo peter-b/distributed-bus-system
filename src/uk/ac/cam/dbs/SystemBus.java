@@ -266,12 +266,12 @@ public class SystemBus implements UDPMessageListener {
     private class UDPMonitor implements Runnable {
         BusConnection conn;
         private boolean enabled;
-        private Integer mutex;
+        private Object lock;
 
         UDPMonitor(BusConnection connection) {
             super();
             conn = connection;
-            mutex = new Integer(0);
+            lock = new Object();
             enabled = true;
         }
 
@@ -284,7 +284,7 @@ public class SystemBus implements UDPMessageListener {
                         UDPMessage msg = UDPMessage.recv(din);
                         SystemBus.this.recvUDPMessage(conn, msg);
                     }
-                    synchronized (mutex) {
+                    synchronized (lock) {
                         /* Note that shutdown() is only called from
                          * removeConnection(), so bypass calling it
                          * again. */
@@ -300,7 +300,7 @@ public class SystemBus implements UDPMessageListener {
         }
 
         void shutdown() {
-            synchronized (mutex) {
+            synchronized (lock) {
                 enabled = false;
             }
         }
