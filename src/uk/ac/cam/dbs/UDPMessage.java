@@ -115,9 +115,9 @@ public class UDPMessage {
         int len   = getPayload().length;
 
         /** Turn values into signed 16-bit integers */
-        to    = (to   >= 0x8000) ? (to   - 0x8000) : to;
-        from  = (from >= 0x8000) ? (from - 0x8000) : from;
-        len   = (len  >= 0x8000) ? (len  - 0x8000) : len;
+        to    = (to   >= 0x8000) ? (to   - 0x10000) : to;
+        from  = (from >= 0x8000) ? (from - 0x10000) : from;
+        len   = (len  >= 0x8000) ? (len  - 0x10000) : len;
 
         synchronized (out) {
             out.writeChar((char) from);
@@ -150,10 +150,10 @@ public class UDPMessage {
             sum = in.readChar();
 
             /* Convert from signed char to unsigned integer */
-            from = (from < 0) ? (from + 0x8000) : from;
-            to =   (to   < 0) ? (to   + 0x8000) : to;
-            len =  (len  < 0) ? (len  + 0x8000) : len;
-            sum =  (sum  < 0) ? (sum  + 0x8000) : sum;
+            from = (from < 0) ? (from + 0x10000) : from;
+            to =   (to   < 0) ? (to   + 0x10000) : to;
+            len =  (len  < 0) ? (len  + 0x10000) : len;
+            sum =  (sum  < 0) ? (sum  + 0x10000) : sum;
 
             /* Don't bother validating the checksum */
 
