@@ -73,9 +73,9 @@
 
   <target name="doc" description="Create API documentation">
     <mkdir dir="${doc}"/>
-    <javadoc destdir="${doc}">
-      <sourcepath refid="srcpath.pc"/>
-    </javadoc>
+    <javadoc destdir="${doc}"
+             classpathref="classpath.lib.pc"
+             sourcepathref="srcpath.pc"/>
   </target>
 
   <target name="clean" description="Clean up generated files">
