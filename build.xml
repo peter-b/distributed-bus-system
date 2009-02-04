@@ -42,12 +42,6 @@
     <pathelement path="${src.common}"/>
   </path>
 
-  <path id="run.classpath">
-    <path refid="classpath.lib.pc"/>
-    <pathelement path="${build.pc}"/>
-  </path>
-
-
   <!-- Compilation targets -->
   <target name="compile" description="Compile Java source code"
           depends="compile.pc,compile.nxt"/>
@@ -64,12 +58,11 @@
     <mkdir dir="${build.nxt}"/>
     <javac destdir="${build.nxt}"
            bootclasspath="${lib.nxt}/classes.jar"
-           classpathref="classpath.lib.pc"
+           classpathref="classpath.lib.nxt"
            optimize="on" debug="on" source="1.5" target="1.5">
       <src refid="srcpath.nxt"/>
     </javac>
   </target>
-
 
   <target name="doc" description="Create API documentation">
     <mkdir dir="${doc}"/>
@@ -83,12 +76,6 @@
     <delete dir="${build.nxt}"/>
     <delete dir="${dist}"/>
     <delete dir="${doc}"/>
-  </target>
-
-  <target name="runclass" description="Run test for listing devices"
-          depends="compile">
-    <java classname="${run.classname}"
-          classpathref="run.classpath"/>
   </target>
 
 </project>
