@@ -31,6 +31,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import javax.bluetooth.LocalDevice;
 import javax.swing.BoxLayout;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -82,6 +83,8 @@ public class ClockSyncDemo extends JFrame {
                 BluetoothConnectionManager.getConnectionManager();
             if (opts.listenBT) {
                 bt.setListenEnabled(true);
+                System.out.println ("Listening on " +
+                                    LocalDevice.getLocalDevice().getBluetoothAddress());
             }
             iter = opts.hostsBT.iterator();
             while (iter.hasNext()) {
@@ -165,7 +168,7 @@ class ClockSyncOptions {
     }
 
     private void parseOptions(String[] args) {
-        Getopt g = new Getopt("clocksync-demo", args, "hBTb:t:");
+        Getopt g = new Getopt("clocksync-demo", args, "hBTb:t:o:");
         g.setOpterr(false); /* We'll print our own errors */
         int c;
         String arg;

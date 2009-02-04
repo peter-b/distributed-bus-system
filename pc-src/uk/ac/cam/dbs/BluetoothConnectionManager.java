@@ -148,7 +148,7 @@ public class BluetoothConnectionManager implements BusConnectionServer {
     public void setListenEnabled(boolean enabled) {
         synchronized (server.lock) {
             if (server.enabled == enabled) return;
-            if (enabled) {
+            if (!enabled) {
                 server.enabled = false;
             } else {
                 server.enabled = true;

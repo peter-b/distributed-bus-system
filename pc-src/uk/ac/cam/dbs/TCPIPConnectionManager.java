@@ -245,7 +245,7 @@ public class TCPIPConnectionManager implements BusConnectionServer {
                     }
                 }
             } catch (IOException e) {
-                System.err.printf("SPP serverr error: %1$s", e.getMessage());
+                System.err.printf("SPP server error: %1$s", e.getMessage());
             } finally {
                 if (listen_sock != null) {
                     try {
