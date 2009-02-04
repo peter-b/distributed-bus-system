@@ -20,12 +20,16 @@
 
 import uk.ac.cam.dbs.*;
 
+import gnu.getopt.Getopt;
 import java.awt.Container;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.util.Date;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Locale;
 import javax.swing.BoxLayout;
 import javax.swing.JFrame;
@@ -41,21 +45,14 @@ public class ClockSyncDemo extends JFrame {
     JLabel netTimeLabel;
     JLabel intlTimeLabel;
 
-    static final int NUM_THREADS = 3;
-    static final int RUN_TIME = 30000; /* ms */
-
     public static void main(String[] args) {
 
-        if (args.length < 1) {
-            System.err.println("You must specify an initial clock offset in seconds!");
-            System.exit(1);
-        }
-
-        final long initOffset = Long.parseLong(args[0]) * 1000;
+        ClockSyncOptions opts = new ClockSyncOptions(args);
+        final long offset = opts.initOffset;
 
         TimeProvider intTime = new TimeProvider() {
                 public long currentTimeMillis() {
-                    return System.currentTimeMillis() + initOffset;
+                    return System.currentTimeMillis() + offset;
                 }
             };
 
@@ -69,17 +66,30 @@ public class ClockSyncDemo extends JFrame {
 
         /* Make connection */
         try {
+            Iterator<String> iter;
+
             TCPIPConnectionManager tcpip =
                 TCPIPConnectionManager.getConnectionManager();
-            if (!isDaemon) {
-                System.out.println("# Connecting...");
-                tcpip.connectHost(args[1]);
-            } else {
-                System.out.println("# Listening for connections...");
+            if (opts.listenTCPIP) {
                 tcpip.setListenEnabled(true);
             }
+            iter = opts.hostsTCPIP.iterator();
+            while (iter.hasNext()) {
+                tcpip.connectHost(iter.next());
+            }
+
+            BluetoothConnectionManager bt =
+                BluetoothConnectionManager.getConnectionManager();
+            if (opts.listenBT) {
+                bt.setListenEnabled(true);
+            }
+            iter = opts.hostsBT.iterator();
+            while (iter.hasNext()) {
+                bt.connectDevice(iter.next());
+            }
+
         } catch (IOException e) {
-            System.err.printf("Failed to open connection: %1$s\n",
+            System.err.printf("Failed to open connections: %1$s\n",
                               e.getMessage());
             System.exit(1);
         }
@@ -134,5 +144,87 @@ public class ClockSyncDemo extends JFrame {
         updateDisplay();
 
         pack();
+    }
+}
+
+class ClockSyncOptions {
+
+    boolean listenBT;
+    boolean listenTCPIP;
+    List<String> hostsTCPIP;
+    List<String> hostsBT;
+    long initOffset;
+
+    public ClockSyncOptions(String[] args) {
+        listenBT = false;
+        listenTCPIP = false;
+        hostsTCPIP = new LinkedList<String>();
+        hostsBT = new LinkedList<String>();
+        initOffset = 0;
+        parseOptions(args);
+    }
+
+    private void parseOptions(String[] args) {
+        Getopt g = new Getopt("clocksync-demo", args, "hBTb:t:");
+        g.setOpterr(false); /* We'll print our own errors */
+        int c;
+        String arg;
+
+        while ((c = g.getopt()) != -1) {
+            switch (c) {
+            case 'h':
+                usage(0);
+                break;
+
+            case 'B':
+                listenBT = true;
+                break;
+            case 'T':
+                listenTCPIP = true;
+                break;
+
+            case 'b':
+                hostsBT.add(g.getOptarg());
+                break;
+            case 't':
+                hostsTCPIP.add(g.getOptarg());
+                break;
+
+            case 'o':
+                try {
+                    initOffset = (long) (Double.parseDouble(g.getOptarg()) * 1000);
+                } catch (NumberFormatException e) {
+                    System.err.println("Malformed offset " +
+                                       g.getOptarg());
+                    usage(1);
+                }
+                break;
+
+            case ':':
+                System.err.println ("You need an argument for the -"
+                                    + (char) g.getOptopt() +
+                                    " option.");
+                usage(1);
+                break;
+            case '?':
+                System.err.println ("Unrecognised option -"
+                                    + (char) g.getOptopt());
+                usage(1);
+                break;
+            }
+        }
+    }
+
+    private void usage(int exitstatus) {
+        System.out.println("Usage: \n"
+                           + "        clocksync-demo [options]\n"
+                           + "Options:\n"
+                           + "        -h        Display help\n"
+                           + "        -B        Accept TCP/IP connections\n"
+                           + "        -T        Accept Bluetooth connections\n"
+                           + "        -b addr   Connect to Bluetooth device\n"
+                           + "        -t host   Connect to TCP/IP host\n"
+                           + "        -o offset Initial clock offset (secs)\n");
+        System.exit(exitstatus);
     }
 }
