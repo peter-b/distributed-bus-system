@@ -20,6 +20,9 @@
 
 package uk.ac.cam.dbs;
 
+import javax.bluetooth.LocalDevice;
+import javax.bluetooth.BluetoothStateException;
+
 import javax.microedition.io.Connector;
 import javax.microedition.io.StreamConnection;
 import javax.microedition.io.StreamConnectionNotifier;
@@ -51,6 +54,15 @@ public class BluetoothConnectionManager implements BusConnectionServer {
 
     /** The name used to describe this service. */
     private static final String SERVICE_NAME = "DistributedBus";
+
+    /** The interface address of Bluetooth interface */;
+    private InterfaceAddress localAddress;
+
+    public InterfaceAddress getLocalAddress() {
+        if (localAddress == null) {
+        }
+        return localAddress;
+    }
 
     /* ************************************************** */
 
@@ -127,9 +139,8 @@ public class BluetoothConnectionManager implements BusConnectionServer {
             return !closed;
         }
 
-        public byte[] getLocalAddress() {
-            /* FIXME return an address */
-            return null;
+        public InterfaceAddress getLocalAddress() {
+            return BluetoothConnectionManager.this.getLocalAddress();
         }
     }
 
@@ -252,15 +263,23 @@ public class BluetoothConnectionManager implements BusConnectionServer {
      *
      * @see #getConnectionManager()
      */
-    protected BluetoothConnectionManager() {
+    protected BluetoothConnectionManager() throws BluetoothStateException {
         server = new BluetoothServer();
+
+        /* FIXME use Rfc4193InterfaceAddress */
+        String mac = LocalDevice.getLocalDevice().getBluetoothAddress();
+        String addr= "0:0:0:0:" + mac.substring(0, 4) + ":" +
+            mac.substring(4,6) + "ff:fe" + mac.substring(6,8) + ":" +
+            mac.substring(8,12);
+        localAddress = new InterfaceAddress(addr);
     }
 
     /** Get the Bluetooth connection manager
      *
      * @return the global <code>BluetoothConnectionManager</code>.
      */
-    public static synchronized BluetoothConnectionManager getConnectionManager() {
+    public static synchronized BluetoothConnectionManager getConnectionManager()
+        throws BluetoothStateException {
         if (instance == null) {
             instance = new BluetoothConnectionManager();
         }
