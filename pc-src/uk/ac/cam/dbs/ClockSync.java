@@ -20,6 +20,8 @@
 
 package uk.ac.cam.dbs;
 
+import static uk.ac.cam.dbs.util.ByteBufferHelper.numFromBytes;
+import static uk.ac.cam.dbs.util.ByteBufferHelper.numToBytes;
 import java.io.IOException;
 import java.util.Vector;
 import java.util.Hashtable;
@@ -40,9 +42,9 @@ public class ClockSync
     private static final int UPDATE_PERIOD = 1000;
 
     /* Contains RecvRecord, keyed by BusConnection */
-    private Hashtable recvStore;
+    private Hashtable<BusConnection,RecvRecord> recvStore;
     /* Contains Long (sent time), keyed by Integer (seq) */
-    private Hashtable sentStore;
+    private Hashtable<Integer,Long> sentStore;
 
     private Object offsetLock;
     private long offset;
@@ -68,8 +70,8 @@ public class ClockSync
      */
     public ClockSync(TimeProvider internalTime) {
         this.internalTime = internalTime;
-        recvStore = new Hashtable();
-        sentStore = new Hashtable();
+        recvStore = new Hashtable<BusConnection,RecvRecord>();
+        sentStore = new Hashtable<Integer,Long>();
         offset = 0;
         offsetLock = new Object();
         seq = 1;
@@ -170,7 +172,7 @@ public class ClockSync
         /* Calculate the latency if we can */
         Long sendTime = null;
         synchronized (sentStore) {
-            sendTime = (Long) sentStore.get(new Integer(oldSeq));
+            sendTime = sentStore.get(new Integer(oldSeq));
         }
         if (sendTime != null) {
             rec.roundTrip = rec.localTime - sendTime.longValue() - holdTime;
@@ -204,7 +206,7 @@ public class ClockSync
         throws IOException {
         RecvRecord rec = null;
         synchronized (recvStore) {
-            rec = (RecvRecord) recvStore.get(connection);
+            rec = recvStore.get(connection);
         }
         long now = internalTime.currentTimeMillis();
         byte[] payload = new byte[24];
@@ -242,14 +244,14 @@ public class ClockSync
     /** Uses the received messages to calculate a new clock offset. */
     private void updateOffset () {
         synchronized (recvStore) {
-            Enumeration conns = recvStore.keys();
+            Enumeration<BusConnection> conns = recvStore.keys();
             int N = SystemBus.getSystemBus().getConnections().size();
             double e = 0.0;
 
             synchronized (offsetLock) {
                 while (conns.hasMoreElements()) {
-                    Object k = conns.nextElement();
-                    RecvRecord rec = (RecvRecord) recvStore.get(k);
+                    BusConnection k = conns.nextElement();
+                    RecvRecord rec = recvStore.get(k);
 
                     if (rec.roundTripValid && !rec.usedForUpdate) {
                         e += rec.remoteTime + rec.roundTrip/2
@@ -260,61 +262,6 @@ public class ClockSync
 
                 offset += (long) gain * e / (N+1.0);
             }
-        }
-    }
-
-    /** <p>Parses a signed integer from a byte array. Parses an
-     * integer of <code>len*8</code> bytes from the byte array
-     * <code>b</code>, with the MSB at <code>b[off]<code> and the LSB
-     * at <code>b[off+len-1<code>. Assumes that the number is two's
-     * complement encoded, and in network byte order.</p>
-     *
-     * @param b   Byte array to parse.
-     * @param off Offset within <code>b</code> of MSB of integer.
-     * @param len Length of integer in octets.
-     *
-     * @return The number retrieved.
-     */
-    private long numFromBytes(byte[] b, int off, int len) {
-        long result;
-
-        /* First, pad the result with 1s or 0s depending on the MSB of
-         * the stored number */
-        if ((b[off] & 0x80) != 0) {
-            result = ~(0L);
-        } else {
-            result = 0L;
-        }
-
-        /* Then shift in the data */
-        for (int i = 0; i < len; i++) {
-            result = (result << 8) | (0xff & b[off+i]);
-        }
-
-        return result;
-    }
-
-
-    /** <p>Writes a signed integer into a byte array. Writes an
-     * integer of <code>len*8</code> bytes into the byte array
-     * <code>b</code>, with the MSB at <code>b[off]<code> and the LSB
-     * at <code>b[off+len-1<code>. The data is encoded in two's
-     * complement format, and in network byte order.</p>
-     *
-     * @param b   Byte array to write to.
-     * @param off Offset within <code>b</code> of MSB of integer.
-     * @param len Length of integer in octets.
-     */
-    private void numToBytes(long value, byte[] b, int off, int len) {
-        /* Shift in the data */
-        long shift = value;
-        for (int i = len - 1; i >= 0; i--) {
-            long v = shift & 0xff;
-            if ((v & 0x80) > 0) {
-                v -= 0x100;
-            }
-            b[off+i] = (byte) v;
-            shift = shift >> 8;
         }
     }
 }
