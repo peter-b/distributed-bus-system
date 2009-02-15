@@ -102,6 +102,7 @@ public class TCPIPConnectionManager implements BusConnectionServer {
         private InputStream inStream;
         private OutputStream outStream;
         private InterfaceAddress localAddress;
+        private InterfaceAddress remoteAddress;
 
         TCPIPConnection(Socket sock, InterfaceAddress localAddress)
             throws IOException {
@@ -119,6 +120,16 @@ public class TCPIPConnectionManager implements BusConnectionServer {
             };
 
             this.localAddress = localAddress;
+
+            /* Exchange interface addresses (should be the first 16
+             * bytes sent over connection) */
+            outStream.write(getLocalAddress().getBytes());
+            byte[] buf = new byte[16];
+            int i = 0;
+            while (i < buf.length) {
+                i += inStream.read(buf, i, buf.length - i);
+            }
+            remoteAddress = new InterfaceAddress(buf);
 
             SystemBus.getSystemBus().addConnection(this);
         }
@@ -152,6 +163,10 @@ public class TCPIPConnectionManager implements BusConnectionServer {
 
         public InterfaceAddress getLocalAddress() {
             return localAddress;
+        }
+
+        public InterfaceAddress getRemoteAddress() {
+            return remoteAddress;
         }
     }
 

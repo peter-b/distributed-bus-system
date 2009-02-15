@@ -89,6 +89,8 @@ public class BluetoothConnectionManager implements BusConnectionServer {
         private StreamConnection conn;
         private boolean closed;
 
+        private InterfaceAddress remoteAddress;
+
         BluetoothConnection(StreamConnection stream)
             throws IOException {
 
@@ -106,6 +108,13 @@ public class BluetoothConnectionManager implements BusConnectionServer {
                         BluetoothConnection.this.disconnect();
                     }
                 };
+
+            /* Exchange interface addresses (should be the first 16
+             * bytes sent over connection) */
+            outStream.write(getLocalAddress().getBytes());
+            byte[] buf = new byte[16];
+            inStream.read(buf);
+            remoteAddress = new InterfaceAddress(buf);
 
             SystemBus.getSystemBus().addConnection(this);
         }
@@ -138,6 +147,10 @@ public class BluetoothConnectionManager implements BusConnectionServer {
 
         public InterfaceAddress getLocalAddress() {
             return localAddress;
+        }
+
+        public InterfaceAddress getRemoteAddress() {
+            return remoteAddress;
         }
     }
 

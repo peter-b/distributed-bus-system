@@ -35,6 +35,13 @@ public interface BusConnection {
      */
     InterfaceAddress getLocalAddress();
 
+    /** Get the remote address of the connection. Used to identify the
+     * device at the far end of a connection.
+     *
+     * @return The remote interface address.
+     */
+    InterfaceAddress getRemoteAddress();
+
     /** Tests if this <code>BusConnection</code> is connected.
      *
      * @return <code>true</code> if the connection is active.
