@@ -33,7 +33,7 @@ public interface BusConnection {
      *
      * @return The local interface address.
      */
-    byte[] getLocalAddress();
+    InterfaceAddress getLocalAddress();
 
     /** Tests if this <code>BusConnection</code> is connected.
      *

@@ -20,16 +20,20 @@
 
 package uk.ac.cam.dbs;
 
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketTimeoutException;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.FilterInputStream;
 import java.io.OutputStream;
 import java.io.FilterOutputStream;
+
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketTimeoutException;
+import java.net.SocketException;
+import java.net.NetworkInterface;
+
+import java.util.Enumeration;
 
 /** <p>Manages bus connections tunnelled over TCP/IP.</p>
  *
@@ -50,6 +54,7 @@ import java.io.FilterOutputStream;
  */
 public class TCPIPConnectionManager implements BusConnectionServer {
     private int tcp_port = 51992;
+    private InterfaceAddress localAddress = null;
 
     /* ************************************************** */
 
@@ -88,7 +93,7 @@ public class TCPIPConnectionManager implements BusConnectionServer {
         InetAddress hostAddr = InetAddress.getByName(hostname);
         Socket sock = new Socket(hostAddr, port);
 
-        return this.new TCPIPConnection(sock);
+        return this.new TCPIPConnection(sock, getLocalAddress());
     }
 
     /** BusConnection implementation for TCP/IP tunnels. */
@@ -96,8 +101,10 @@ public class TCPIPConnectionManager implements BusConnectionServer {
         private Socket socket;
         private InputStream inStream;
         private OutputStream outStream;
+        private InterfaceAddress localAddress;
 
-        TCPIPConnection(Socket sock) throws IOException {
+        TCPIPConnection(Socket sock, InterfaceAddress localAddress)
+            throws IOException {
             socket = sock;
 
             inStream = new FilterInputStream(socket.getInputStream()) {
@@ -110,6 +117,8 @@ public class TCPIPConnectionManager implements BusConnectionServer {
                     TCPIPConnection.this.disconnect();
                 }
             };
+
+            this.localAddress = localAddress;
 
             SystemBus.getSystemBus().addConnection(this);
         }
@@ -141,8 +150,8 @@ public class TCPIPConnectionManager implements BusConnectionServer {
             return socket.isConnected();
         }
 
-        public byte[] getLocalAddress() {
-            throw new UnsupportedOperationException();
+        public InterfaceAddress getLocalAddress() {
+            return localAddress;
         }
     }
 
@@ -167,6 +176,7 @@ public class TCPIPConnectionManager implements BusConnectionServer {
     public synchronized void setTCPPort(int port) {
         if (tcp_port == port) return;
         tcp_port = port;
+        localAddress = null; /* Reset this! */
 
         /* If necessary, restart the server thread. */
         if (isListenEnabled()) {
@@ -238,8 +248,10 @@ public class TCPIPConnectionManager implements BusConnectionServer {
                         Socket client_sock = listen_sock.accept();
 
                         /* This *isn't* just being thrown away! */
+                        InterfaceAddress localAddr =
+                            TCPIPConnectionManager.this.getLocalAddress();
                         TCPIPConnectionManager.this.new
-                            TCPIPConnection(client_sock);
+                            TCPIPConnection(client_sock, localAddr);
                     } catch (SocketTimeoutException e) {
                         continue;
                     }
@@ -257,6 +269,27 @@ public class TCPIPConnectionManager implements BusConnectionServer {
     }
 
     /* ************************************************** */
+
+    public InterfaceAddress getLocalAddress() {
+        if (localAddress != null) return localAddress;
+
+        /* Try and find an EUI-64 to latch onto. */
+        byte[] mac = null;
+        try {
+            Enumeration<NetworkInterface> ifaces =
+                NetworkInterface.getNetworkInterfaces();
+            while (ifaces.hasMoreElements()) {
+                NetworkInterface iface = ifaces.nextElement();
+                mac = iface.getHardwareAddress();
+                if (mac != null) break;
+            }
+        } catch (SocketException e) {
+            throw new RuntimeException(e);
+        }
+
+        localAddress = new Rfc4193InterfaceAddress(mac);
+        return localAddress;
+    }
 
     /** Create a new <code>TCPIPConnectionManager</code>. Do not call
      * this directly: use <code>getConnectionManager()</code>.
