@@ -188,7 +188,51 @@ public class SystemBus implements UDPMessageListener {
 
     /** A list of active connections. */
     private Vector connections;
+    /** A list of UDPMonitors */
     private Vector connectionMonitors;
+    /** A list of BusConnectionChangeListener. */
+    private Vector connectionListeners;
+
+    /** Add a a listener for connection change events. The
+     * <code>BusConnectionChangeListener</code>'s
+     * <code>connectionChanged()</code> method is called whenever a
+     * connection is added or removed from the list of active
+     * connections.
+     *
+     * @param l Event handler to add.
+     *
+     * @see BusConnectionChangeListener#connectionChanged(BusConnection, int)
+     */
+    public void addConnectionChangeListener(BusConnectionChangeListener l) {
+        synchronized (connectionListeners) {
+            if (connectionListeners.indexOf(l) == -1) {
+                connectionListeners.addElement(l);
+            }
+        }
+    }
+
+    /** Remove a listener for connection change events. If
+     * <code>l</code> was not previously added with
+     * <code>addConnectionChangeListener()</code>, does nothing.
+     *
+     * @param l Event handler to remove.
+     */
+    public void removeConnectionChangeListener(BusConnectionChangeListener l) {
+        synchronized (connectionListeners) {
+            connectionListeners.removeElement(l);
+        }
+    }
+
+    /** Dispatch a connection change event to listeners. */
+    private void connectionChangeDispatch(BusConnection c, int s) {
+        synchronized (connectionListeners) {
+            for (int i = 0; i < connectionListeners.size(); i++) {
+                BusConnectionChangeListener l = (BusConnectionChangeListener)
+                    connectionListeners.elementAt(i);
+                l.connectionChanged(c, s);
+            }
+        }
+    }
 
     /** <p>Get a list of active connections.</p>
      *
@@ -228,6 +272,9 @@ public class SystemBus implements UDPMessageListener {
             (new Thread(m)).start();
             connectionMonitors.addElement(m);
         }
+
+        connectionChangeDispatch(connection,
+                                 BusConnectionChangeListener.CONNECTION_ADDED);
     }
 
     /** Remove a connection from the active connections. Halts the
@@ -260,6 +307,9 @@ public class SystemBus implements UDPMessageListener {
                 }
             }
         }
+
+        connectionChangeDispatch(connection,
+                                 BusConnectionChangeListener.CONNECTION_REMOVED);
     }
 
     /** Monitors a BusConnection for incoming messages */
@@ -316,6 +366,7 @@ public class SystemBus implements UDPMessageListener {
     protected SystemBus() {
         connections = new Vector();
         connectionMonitors = new Vector();
+        connectionListeners = new Vector();
         portBindings = new Vector();
     }
 

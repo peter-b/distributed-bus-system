@@ -28,7 +28,7 @@ import java.util.ConcurrentModificationException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
-public class TCPIPConnectionDemo {
+public class TCPIPConnectionDemo implements BusConnectionChangeListener {
 
     boolean isDaemon;
 
@@ -38,6 +38,8 @@ public class TCPIPConnectionDemo {
     public static void main(String[] args) {
         TCPIPConnectionDemo demo = new TCPIPConnectionDemo();
         demo.isDaemon = (args.length < 1);
+
+        SystemBus.getSystemBus().addConnectionChangeListener(demo);
 
         /* Start threads */
         for (int i = 1; i <= NUM_THREADS; i++) {
@@ -68,6 +70,18 @@ public class TCPIPConnectionDemo {
         } catch (InterruptedException e) {
             return; /* Just quit */
         }
+    }
+
+    public void connectionChanged(BusConnection connection, int status) {
+        String message = "# Link to [" + connection.getRemoteAddress().toString() + "] ";
+        if (status == CONNECTION_ADDED) {
+            message = message + "UP";
+        } else if (status == CONNECTION_REMOVED) {
+            message = message + "DOWN";
+        } else {
+            message = message + "CHANGED";
+        }
+        System.out.println (message);
     }
 
     private class DummyService
