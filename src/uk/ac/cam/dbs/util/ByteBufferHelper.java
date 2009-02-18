@@ -53,6 +53,40 @@ public class ByteBufferHelper {
         return result;
     }
 
+    /** <p>Parses an unsigned integer from a byte array. Parses an
+     * integer of <code>len*8</code> bytes from the byte array
+     * <code>b</code>, with the MSB at <code>b[off]<code> and the LSB
+     * at <code>b[off+len-1<code>. Assumes that the number is in
+     * network byte order.</p>
+     *
+     * <p>Values <code>x &gt;= (1&lt;&lt;63 - 1)</code> are truncated.</p>
+     *
+     * @param b   Byte array to parse.
+     * @param off Offset within <code>b</code> of MSB of integer.
+     * @param len Length of integer in octets.
+     *
+     * @return The number retrieved.
+     */
+    public static long numFromBytesUnsigned(byte[] b, int off, int len) {
+        long result;
+
+        /* First, pad the result with 0s. */
+        result = 0L;
+
+        /* Shift in the data as usual. */
+        for (int i = 0; i < len; i++) {
+            result = (result << 8) | (0xff & b[off+i]);
+        }
+
+        /* If the result is negative, truncate to the maximum possible
+         * long value. */
+        if (result < 0) {
+            result = (1L << 63) ^ -1;
+        }
+
+        return result;
+    }
+
 
     /** <p>Writes a signed integer into a byte array. Writes an
      * integer of <code>len*8</code> bytes into the byte array
