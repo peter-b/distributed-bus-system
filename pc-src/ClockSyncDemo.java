@@ -19,6 +19,7 @@
  */
 
 import uk.ac.cam.dbs.*;
+import uk.ac.cam.dbs.bfrp.*;
 
 import gnu.getopt.Getopt;
 import java.awt.Container;
@@ -37,7 +38,8 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.Timer;
 
-public class ClockSyncDemo extends JFrame {
+public class ClockSyncDemo extends JFrame
+    implements BusConnectionChangeListener, BfrpRouteChangeListener {
 
     TimeProvider networkTime;
     TimeProvider internalTime;
@@ -57,6 +59,7 @@ public class ClockSyncDemo extends JFrame {
                 }
             };
 
+        /* Start clock sync service */
         ClockSync service = new ClockSync(intTime);
         Thread serviceThread = new Thread(service);
         serviceThread.setDaemon(true);
@@ -65,12 +68,23 @@ public class ClockSyncDemo extends JFrame {
         ClockSyncDemo demo = new ClockSyncDemo(service, intTime);
         boolean isDaemon = (args.length < 2);
 
-        /* Make connection */
         try {
-            Iterator<String> iter;
-
             TCPIPConnectionManager tcpip =
                 TCPIPConnectionManager.getConnectionManager();
+            BluetoothConnectionManager bt =
+                BluetoothConnectionManager.getConnectionManager();
+
+            /* Start up routing service */
+            BruteForceRouting routingService =
+                new BruteForceRouting(bt.getLocalAddress());
+            routingService.addRouteChangeListener(demo);
+            Thread routeThread = new Thread(routingService);
+            routeThread.setDaemon(true);
+            routeThread.start();
+
+            /* Make connection */
+            Iterator<String> iter;
+
             if (opts.listenTCPIP) {
                 tcpip.setListenEnabled(true);
             }
@@ -79,8 +93,6 @@ public class ClockSyncDemo extends JFrame {
                 tcpip.connectHost(iter.next());
             }
 
-            BluetoothConnectionManager bt =
-                BluetoothConnectionManager.getConnectionManager();
             if (opts.listenBT) {
                 bt.setListenEnabled(true);
                 System.out.println ("Listening on " +
@@ -98,6 +110,31 @@ public class ClockSyncDemo extends JFrame {
         }
 
         demo.setVisible(true);
+    }
+
+    /* FIXME show this on the GUI somehow */
+    public void connectionChanged(BusConnection connection, int status) {
+        String message = "# Link to [" + connection.getRemoteAddress().toString() + "] ";
+        if (status == CONNECTION_ADDED) {
+            message = message + "UP";
+        } else if (status == CONNECTION_REMOVED) {
+            message = message + "DOWN";
+        } else {
+            message = message + "CHANGED";
+        }
+        System.out.println (message);
+    }
+    /* FIXME show this on the GUI somehow */
+    public void routeChanged (InterfaceAddress addr, int status) {
+        String message = "# Route to [" + addr.toString() + "] ";
+        if (status == ROUTE_ADDED) {
+            message = message + "UP";
+        } else if (status == ROUTE_REMOVED) {
+            message = message + "DOWN";
+        } else {
+            message = message + "CHANGED";
+        }
+        System.out.println (message);
     }
 
     public void updateDisplay() {
@@ -147,6 +184,9 @@ public class ClockSyncDemo extends JFrame {
         updateDisplay();
 
         pack();
+
+        /* Register that we want to receive connection change events */
+        SystemBus.getSystemBus().addConnectionChangeListener(this);
     }
 }
 
@@ -223,8 +263,8 @@ class ClockSyncOptions {
                            + "        clocksync-demo [options]\n"
                            + "Options:\n"
                            + "        -h        Display help\n"
-                           + "        -B        Accept TCP/IP connections\n"
-                           + "        -T        Accept Bluetooth connections\n"
+                           + "        -T        Accept TCP/IP connections\n"
+                           + "        -B        Accept Bluetooth connections\n"
                            + "        -b addr   Connect to Bluetooth device\n"
                            + "        -t host   Connect to TCP/IP host\n"
                            + "        -o offset Initial clock offset (secs)\n");
