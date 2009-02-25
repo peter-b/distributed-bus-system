@@ -40,7 +40,9 @@ public class InterfaceAddress {
             throw new NullPointerException();
         if (ipv6.length != 16)
             throw new IllegalArgumentException();
-        bytes = ipv6.clone();
+
+        bytes = new byte[16];
+        for (int i = 0; i < 16; i++) bytes[i] = ipv6[i];
     }
 
     public InterfaceAddress(String ipv6) {
