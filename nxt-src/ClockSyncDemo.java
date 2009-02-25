@@ -19,55 +19,65 @@
  */
 
 import uk.ac.cam.dbs.*;
+import uk.ac.cam.dbs.bfrp.*;
 
 import java.io.IOException;
 import lejos.nxt.LCD;
 
 public class ClockSyncDemo {
 
-    private static final String remoteAddr = "0009DD648148";
-
     private static char[] buf = new char[21];
 
     public static void main(String[] args) {
 
-        TimeProvider intTime = TimeProvider.systemTimeProvider();
-        ClockSync service = new ClockSync(intTime);
-
         LCD.clear();
 
-        Thread serviceThread = new Thread(service);
-        serviceThread.setDaemon(true);
-        serviceThread.start();
+        /* Get the Bluetooth connection manager */
+        BluetoothConnectionManager bt = null;
+        try {
+            bt = BluetoothConnectionManager.getConnectionManager();
+        } catch (Exception e) {
+            throw new RuntimeException();
+        }
 
-        System.out.println("Clock sync started");
+        /* Start up clock sync service */
+        TimeProvider intTime = TimeProvider.systemTimeProvider();
+        ClockSync clockService = new ClockSync(intTime);
+        Thread clockThread = new Thread(clockService);
+        clockThread.setDaemon(true);
+        clockThread.start();
+
+        /* Start up routing service */
+        BruteForceRouting routingService =
+            new BruteForceRouting(bt.getLocalAddress());
+        BfrpRouteChangeListener notifier =
+            new BfrpRouteChangeListener() {
+                public void routeChanged (InterfaceAddress addr, int status) {
+                    String message = "# Route to [" + addr.toString() + "] ";
+                    if (status == ROUTE_ADDED) {
+                        message = message + "UP";
+                    } else if (status == ROUTE_REMOVED) {
+                        message = message + "DOWN";
+                    } else {
+                        message = message + "CHANGED";
+                    }
+                    System.out.println (message);
+                }
+            };
+        routingService.addRouteChangeListener(notifier);
+        Thread routeThread = new Thread(routingService);
+        routeThread.setDaemon(true);
+        routeThread.start();
 
         /* Make connection */
+        bt.setListenEnabled(true);
+
         try {
-            System.out.println("Connecting " + remoteAddr);
-
-            BluetoothConnectionManager bt =
-                BluetoothConnectionManager.getConnectionManager();
-
-            bt.connectDevice(remoteAddr);
-
-        } catch (IOException e) {
-            if (e.getMessage() != null)
-                System.out.println(e.getMessage());
-            System.out.println("Connection failed!");
-            try { Thread.sleep(1000); } catch (InterruptedException f) { }
-            return;
-        }
-
-        System.exit(0);
-
-        while (true) {
-            try {
-                Thread.sleep (1000);
-            } catch (InterruptedException e) {
-                System.out.println("Interrupted");
+            while (true) {
+                System.out.println(longToString(clockService.currentTimeMillis()));
+                Thread.sleep(1000);
             }
-        }
+        } catch (InterruptedException f) { }
     }
 
     public static String longToString(long l) {
