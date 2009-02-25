@@ -1,7 +1,0 @@
-#!/bin/sh
-
-COMMON_LIBS=`find ./lib -name '*.jar' -printf '%p:'`
-PC_LIBS=`find ./pc-lib -name '*.jar' -printf '%p:'`
-CLASSPATH="$COMMON_LIBS$PC_LIBS./pc-build"
-
-/usr/bin/env java -cp $CLASSPATH TCPIPConnectionDemo $@
