@@ -40,17 +40,18 @@ public class ClockSync
 
     private static final int PORT = 50123;
     private static final int UPDATE_PERIOD = 1000;
+    private static final int MAX_STORE_SIZE = 5;
 
     /* Contains RecvRecord, keyed by BusConnection */
     private Hashtable recvStore;
-    /* Contains Long (sent time), keyed by Integer (seq) */
-    private Hashtable sentStore;
+    /* Contains SendRecord (sent time), keyed by seq % sentStore.size() */
+    private long[] sentStore;
 
     private Object offsetLock;
     private long offset;
 
     private Object seqLock;
-    private int seq;
+    private int seq; /* Contains *previous* sequence number */
 
     private double gain;
 
@@ -71,10 +72,10 @@ public class ClockSync
     public ClockSync(TimeProvider internalTime) {
         this.internalTime = internalTime;
         recvStore = new Hashtable();
-        sentStore = new Hashtable();
+        sentStore = new long[10];
         offset = 0;
         offsetLock = new Object();
-        seq = 1;
+        seq = 0;
         seqLock = new Object();
         gain = 1.0;
     }
@@ -171,12 +172,16 @@ public class ClockSync
         long holdTime =        numFromBytes(buf, 16, 8);
 
         /* Calculate the latency if we can */
-        SendRecord sendRec = null;
+        long sentTime = -1;
         synchronized (sentStore) {
-            sendRec = (SendRecord) sentStore.get(new Integer(oldSeq));
+            if ((oldSeq == 0) || (oldSeq <= seq - 10)) {
+                sentTime = -1;
+            } else {
+                sentTime = sentStore[oldSeq % sentStore.length];
+            }
         }
-        if (sendRec != null) {
-            rec.roundTrip = rec.localTime - sendRec.localTime - holdTime;
+        if (sentTime >= 0) {
+            rec.roundTrip = rec.localTime - sentTime - holdTime;
             rec.roundTripValid = true;
         }
 
@@ -213,10 +218,12 @@ public class ClockSync
         byte[] payload = new byte[24];
 
         /* Get the next sequence number */
-        int seq;
+        /* Ensure we never send out a message with seq=0 */
+        int seq = 0;
         synchronized (seqLock) {
-            seq = this.seq++;
-            if (this.seq == 0) this.seq++;
+            while (seq == 0) {
+                seq = ++this.seq;
+            }
         }
 
         /* Did we receive a message from this connection? */
@@ -236,18 +243,13 @@ public class ClockSync
         /* Send message */
         UDPMessage msg = new UDPMessage(PORT, PORT,
                                         payload);
-        SystemBus.getSystemBus().sendUDPMessage(connection, msg);
 
         /* Add to record of sent messages */
-        sentStore.put(new Integer(seq), new SendRecord(now));
-    }
-
-    /** Entry in the record of sent packets. */
-    private class SendRecord {
-        long localTime;
-        SendRecord (long localTime) {
-            this.localTime = localTime;
+        synchronized(sentStore) {
+            sentStore[seq % sentStore.length] = now;
         }
+
+        SystemBus.getSystemBus().sendUDPMessage(connection, msg);
     }
 
     /** Uses the received messages to calculate a new clock offset. */
