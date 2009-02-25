@@ -112,8 +112,13 @@ public class BluetoothConnectionManager implements BusConnectionServer {
             /* Exchange interface addresses (should be the first 16
              * bytes sent over connection) */
             outStream.write(getLocalAddress().getBytes());
+
             byte[] buf = new byte[16];
-            inStream.read(buf);
+            int i = 0;
+            while (i < buf.length) {
+                i += inStream.read(buf, i, buf.length-i);
+            }
+
             remoteAddress = new InterfaceAddress(buf);
 
             SystemBus.getSystemBus().addConnection(this);
@@ -169,7 +174,7 @@ public class BluetoothConnectionManager implements BusConnectionServer {
     public void setListenEnabled(boolean enabled) {
         synchronized (server.lock) {
             if (server.enabled == enabled) return;
-            if (enabled) {
+            if (!enabled) {
                 server.enabled = false;
             } else {
                 server.enabled = true;
@@ -199,14 +204,55 @@ public class BluetoothConnectionManager implements BusConnectionServer {
         }
 
         public void run() {
-            synchronized (lock) {
-                enabled = false;
+            try {
+                outer: while (enabled) {
+                    /* Only have one incoming connection active at a time */
+                    BluetoothConnection c = null;
+                    while (c == null) {
+                        c = listen();
+                    }
+                    while (c.isConnected()) {
+                        try {
+                            Thread.sleep(1000); /* Nasty */
+                        } catch (InterruptedException e) {
+                            synchronized (lock) {
+                                enabled = false;
+                            }
+                            break outer;
+                        }
+                    }
+                }
+            } catch (IOException e) {
+                /* Only display an error message if listenning is
+                 * enabled */
+                System.out.println("SPP server error: " +
+                                   e.getMessage());
             }
-            throw new RuntimeException("BT server not implemented");
+        }
+
+        public BluetoothConnection listen() throws IOException {
+            StreamConnection nxtc =
+                Bluetooth.waitForConnection(0, /* Wait forever */
+                                            NXTConnection.RAW,
+                                            null);
+            if (nxtc == null) {
+                throw new NullPointerException();
+            }
+            if (enabled) {
+                /* This has side effects! */
+                return new BluetoothConnection(nxtc);
+            } else {
+                nxtc.close();
+                return null;
+            }
         }
     }
 
     /* ************************************************** */
+
+    public InterfaceAddress getLocalAddress() {
+        return localAddress;
+    }
 
     private static BluetoothConnectionManager instance = null;
 
@@ -220,7 +266,7 @@ public class BluetoothConnectionManager implements BusConnectionServer {
 
         String mac = LocalDevice.getLocalDevice().getBluetoothAddress();
         String addr= "0:0:0:0:" + mac.substring(0, 4) + ":" +
-            mac.substring(4,6) + "ff:fe" + mac.substring(6,8) + ":" +
+            mac.substring(4,6) + "FF:FE" + mac.substring(6,8) + ":" +
             mac.substring(8,12);
         localAddress = new InterfaceAddress(addr);
     }
