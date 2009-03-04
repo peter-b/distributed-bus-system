@@ -158,7 +158,7 @@ public class ClockSync
     public void recvUDPMessage(BusConnection connection,
                                UDPMessage msg) {
 
-        RecvRecord rec = this.new RecvRecord();
+        long localTime = System.currentTimeMillis();
 
         /* Parse the message payload */
         byte[] buf = msg.getPayload();
@@ -166,28 +166,46 @@ public class ClockSync
             /* The message appears to be invalid. */
             return;
         }
-        rec.seq =        (int) numFromBytes(buf,  0, 4);
-        rec.remoteTime =       numFromBytes(buf,  4, 8);
-        int oldSeq =     (int) numFromBytes(buf, 12, 4);
-        long holdTime =        numFromBytes(buf, 16, 8);
+        int recvSeq =     (int) numFromBytes(buf,  0, 4);
+        long remoteTime =       numFromBytes(buf,  4, 8);
+        int oldSeq =      (int) numFromBytes(buf, 12, 4);
+        long holdTime =         numFromBytes(buf, 16, 8);
 
         /* Calculate the latency if we can */
         long sentTime = -1;
+        long roundTrip = 0;
+        boolean roundTripValid = false;
         synchronized (sentStore) {
-            if ((oldSeq == 0) || (oldSeq <= seq - 10)) {
+            if ((oldSeq == 0) || (oldSeq <= this.seq - 10)) {
                 sentTime = -1;
             } else {
                 sentTime = sentStore[oldSeq % sentStore.length];
             }
         }
         if (sentTime >= 0) {
-            rec.roundTrip = rec.localTime - sentTime - holdTime;
-            rec.roundTripValid = true;
+            roundTrip = localTime - sentTime - holdTime;
+            roundTripValid = true;
         }
 
-        /* Record that we received a message */
+        /* Do all the synchronized operations last, in one go, to
+         * avoid problems with added latency while waiting to
+         * synchronise */
+        RecvRecord rec = null;
         synchronized (recvStore) {
-            recvStore.put(connection, rec);
+            rec = (RecvRecord) recvStore.get(connection);
+
+            if (rec == null) {
+                rec = this.new RecvRecord();
+                recvStore.put(connection, rec);
+            }
+            synchronized (rec) {
+                rec.seq = recvSeq;
+                rec.remoteTime = remoteTime;
+                rec.localTime = localTime;
+                rec.roundTrip = roundTrip;
+                rec.roundTripValid = roundTripValid;
+                rec.usedForUpdate = false;
+            }
         }
     }
 
@@ -203,7 +221,6 @@ public class ClockSync
         RecvRecord() {
             roundTripValid = false;
             usedForUpdate = false;
-            localTime = ClockSync.this.internalTime.currentTimeMillis();
         }
     }
 
@@ -264,10 +281,12 @@ public class ClockSync
                     Object k = conns.nextElement();
                     RecvRecord rec = (RecvRecord) recvStore.get(k);
 
-                    if (rec.roundTripValid && !rec.usedForUpdate) {
-                        e += rec.remoteTime + rec.roundTrip/2
-                            - rec.localTime - offset;
-                        rec.usedForUpdate = true;
+                    synchronized (rec) {
+                        if (rec.roundTripValid && !rec.usedForUpdate) {
+                            e += rec.remoteTime + rec.roundTrip/2
+                                - rec.localTime - offset;
+                            rec.usedForUpdate = true;
+                        }
                     }
                 }
 
