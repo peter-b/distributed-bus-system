@@ -72,14 +72,6 @@ public class BruteForceRouting
         throw new RuntimeException("Not implemented");
     }
 
-    public void recvUDPMessage(BusConnection conn, UDPMessage msg) {
-        /* Delegate processing and relaying messages to another thread
-         * so as not to block the BusConnection. */
-        MessageRelayAgent agent = new MessageRelayAgent(conn, msg);
-        Thread agentThread = new Thread(agent);
-        agentThread.start();
-    }
-
     public void run() {
         try {
             SystemBus.getSystemBus().addUDPService(this, UDP_PORT);
@@ -218,98 +210,91 @@ public class BruteForceRouting
         }
     }
 
-    private class MessageRelayAgent implements Runnable {
-        BusConnection conn;
-        UDPMessage msg;
-
-        MessageRelayAgent(BusConnection conn, UDPMessage msg) {
-            this.conn = conn;
-            this.msg = msg;
+    public void recvUDPMessage(BusConnection conn, UDPMessage msg) {
+        /* For now, devices don't advertise name or alternative
+         * interface addresses, so the payload should be a fixed
+         * size:
+         *
+         * 16  bits: message length in octets
+         * 16  bits: message sequence number
+         * 16  bits: number of hops so far
+         * 16  bits: reserved (FIXME should be validity time for message)
+         * 128 bits: main address
+         *
+         * Total length: 24 bytes.
+         */
+        byte[] payload = msg.getPayload();
+        if (payload.length != 24) {
+            System.out.println("BFRP message malformed: bad UDP payload length.");
+            return;
         }
 
-        public void run() {
-            /* For now, devices don't advertise name or alternative
-             * interface addresses, so the payload should be a fixed
-             * size:
-             *
-             * 16  bits: message length in octets
-             * 16  bits: message sequence number
-             * 16  bits: number of hops so far
-             * 16  bits: reserved (FIXME should be validity time for message)
-             * 128 bits: main address
-             *
-             * Total length: 24 bytes.
-             */
-            byte[] payload = msg.getPayload();
-            if (payload.length != 24) {
-                System.out.println("BFRP message malformed: bad UDP payload length.");
-                return;
-            }
+        /* Read message length */
+        int size = (int) numFromBytesUnsigned(payload, 0, 2);
+        /* Read message sequence number */
+        int seq = (int) numFromBytesUnsigned(payload, 2, 2);
+        /* Read number of hops */
+        int hops = (int) numFromBytesUnsigned(payload, 4, 2);
+        /* Read main address */
+        byte[] addrBytes = new byte[16];
+        for (int i = 0; i < 16; i++)
+            addrBytes[i] = payload[8+i];
+        InterfaceAddress deviceAddr = new InterfaceAddress(addrBytes);
 
-            /* Read message length */
-            int size = (int) numFromBytesUnsigned(payload, 0, 2);
-            /* Read message sequence number */
-            int seq = (int) numFromBytesUnsigned(payload, 2, 2);
-            /* Read number of hops */
-            int hops = (int) numFromBytesUnsigned(payload, 4, 2);
-            /* Read main address */
-            byte[] addrBytes = new byte[16];
-            for (int i = 0; i < 16; i++)
-                addrBytes[i] = payload[8+i];
-            InterfaceAddress deviceAddr = new InterfaceAddress(addrBytes);
+        DeviceRecord record = getDeviceRecord(deviceAddr);
+        boolean relay = false;
+        boolean newRoute = false;
+        boolean changedRoute = false;
+        if (record == null) {
+            record = new DeviceRecord(deviceAddr);
+            addDeviceRecord(record);
+            relay = true;
+            newRoute = true;
+        }
 
-            DeviceRecord record = getDeviceRecord(deviceAddr);
-            boolean relay = false;
-            boolean newRoute = false;
-            boolean changedRoute = false;
-            if (record == null) {
-                record = new DeviceRecord(deviceAddr);
-                addDeviceRecord(record);
+        if (!relay) {
+            /* If message that arrived has newer sequence number, update & relay */
+            if (seq > record.seq) {
                 relay = true;
-                newRoute = true;
             }
-
-            if (!relay) {
-                /* If message that arrived has newer sequence number, update & relay */
-                if (seq > record.seq) {
-                    relay = true;
-                }
-                /* If message that arrived came by shorter route, update & relay */
-                if (hops < record.dist) {
-                    relay = true;
-                }
+            /* If message that arrived came by shorter route, update & relay */
+            if (hops < record.dist) {
+                relay = true;
             }
-
-            /* If we've decided this isn't worth relaying, bail out now */
-            if (!relay) return;
-
-            /* Update record */
-            record.lastUpdate = System.currentTimeMillis();
-            record.seq = seq;
-            record.dist = hops;
-            record.hop = conn;
-            record.routeValid = true;
-
-            /* Increment hop count */
-            numToBytes(hops + 1, payload, 4, 2);
-            UDPMessage relaymsg = new UDPMessage(UDP_PORT, UDP_PORT, payload);
-            SystemBus bus = SystemBus.getSystemBus();
-
-            /* Relay message to all neighbours apart from sender */
-            Vector connections = bus.getConnections();
-            for (int i = 0; i < connections.size(); i++) {
-                BusConnection relayconn = (BusConnection) connections.elementAt(i);
-                if (relayconn == conn) continue; /* Skip sender */
-                try {
-                    bus.sendUDPMessage(relayconn, relaymsg);
-                } catch (IOException e) {
-                    System.err.println("BFRP relay failed: " + e.getMessage());
-                }
-            }
-
-            /* Notify listeners if this is a new route */
-            if (newRoute)
-                dispatchRouteChange(deviceAddr, BfrpRouteChangeListener.ROUTE_ADDED);
         }
+
+        /* If we've decided this isn't worth relaying, bail out now */
+        if (!relay) return;
+        /* If the route had been purged by the invalid timer, mark it
+         * as new */
+        if (!record.routeValid) newRoute = true;
+
+        /* Update record */
+        record.lastUpdate = System.currentTimeMillis();
+        record.seq = seq;
+        record.dist = hops;
+        record.hop = conn;
+        record.routeValid = true;
+
+        /* Increment hop count */
+        numToBytes(hops + 1, payload, 4, 2);
+        UDPMessage relaymsg = new UDPMessage(UDP_PORT, UDP_PORT, payload);
+        SystemBus bus = SystemBus.getSystemBus();
+
+        /* Relay message to all neighbours apart from sender */
+        Vector connections = bus.getConnections();
+        for (int i = 0; i < connections.size(); i++) {
+            BusConnection relayconn = (BusConnection) connections.elementAt(i);
+            if (relayconn == conn) continue; /* Skip sender */
+            try {
+                bus.sendUDPMessage(relayconn, relaymsg);
+            } catch (IOException e) {
+                System.err.println("BFRP relay failed: " + e.getMessage());
+            }
+        }
+
+        /* Notify listeners if this is a new route */
+        if (newRoute)
+            dispatchRouteChange(deviceAddr, BfrpRouteChangeListener.ROUTE_ADDED);
     }
 }
