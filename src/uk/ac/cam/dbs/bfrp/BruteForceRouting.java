@@ -137,9 +137,8 @@ public class BruteForceRouting
         numToBytes(seq % (1<<16), payload, 2, 2);
         /* Hops so far = 1*/
         numToBytes(1, payload, 4, 2);
-        /* Reserved */
-        /* FIXME should be validity time for message */
-        numToBytes(0, payload, 6, 2);
+        /* Time for which to treat HELLO as valid */
+        numToBytes(2*HELLO_TIME, payload, 6, 2);
         byte[] addrBytes = getMainAddress().getBytes();
         for (int i = 0; i < 16; i++) {
             payload[i+8] = addrBytes[i];
@@ -170,8 +169,7 @@ public class BruteForceRouting
                 DeviceRecord rec = getDeviceRecord(addr);
                 if (!rec.routeValid) continue;
 
-                /* FIXME should use timeout provided by remote device */
-                if (now - rec.lastUpdate > 2 * HELLO_TIME) {
+                if (now - rec.lastUpdate > rec.validTime) {
                     rec.routeValid = false;
                     /* Notify listeners that the route has gone */
                     dispatchRouteChange(addr, BfrpRouteChangeListener.ROUTE_REMOVED);
@@ -195,6 +193,7 @@ public class BruteForceRouting
     private class DeviceRecord {
         int seq;
         int dist;
+        int validTime;
         InterfaceAddress mainAddress;
         BusConnection hop;
         long lastUpdate;
@@ -203,6 +202,7 @@ public class BruteForceRouting
         DeviceRecord(InterfaceAddress addr) {
             seq = -1;
             dist = (1 << 31) ^ -1; /* Max int */
+            validTime = 0;
             mainAddress = addr;
             hop = null;
             lastUpdate = 0;
@@ -218,7 +218,7 @@ public class BruteForceRouting
          * 16  bits: message length in octets
          * 16  bits: message sequence number
          * 16  bits: number of hops so far
-         * 16  bits: reserved (FIXME should be validity time for message)
+         * 16  bits: validity time (milliseconds)
          * 128 bits: main address
          *
          * Total length: 24 bytes.
@@ -235,6 +235,8 @@ public class BruteForceRouting
         int seq = (int) numFromBytesUnsigned(payload, 2, 2);
         /* Read number of hops */
         int hops = (int) numFromBytesUnsigned(payload, 4, 2);
+        /* Read validity period */
+        int validTime = (int) numFromBytesUnsigned(payload, 6, 2);
         /* Read main address */
         byte[] addrBytes = new byte[16];
         for (int i = 0; i < 16; i++)
@@ -273,6 +275,7 @@ public class BruteForceRouting
         record.lastUpdate = System.currentTimeMillis();
         record.seq = seq;
         record.dist = hops;
+        record.validTime = validTime;
         record.hop = conn;
         record.routeValid = true;
 
