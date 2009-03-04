@@ -41,9 +41,6 @@ import java.io.FilterOutputStream;
  *
  * <p>It is designed to be compatible with the LEGO Mindstorms NXT.</p>
  *
- * <p>FIXME Do something more sensible WRT shutting down server
- * thread.</p>
- *
  * @see SystemBus
  * @see #getConnectionManager()
  */

@@ -46,9 +46,6 @@ import java.util.Enumeration;
  * well as a service for listening for incoming connections (the
  * default TCP port is 51992).</p>
  *
- * <p>FIXME Do something more sensible WRT shutting down server
- * thread.</p>
- *
  * @see SystemBus
  * @see #getConnectionManager()
  */
