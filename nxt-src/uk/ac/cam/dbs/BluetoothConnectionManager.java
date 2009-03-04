@@ -205,28 +205,31 @@ public class BluetoothConnectionManager implements BusConnectionServer {
 
         public void run() {
             try {
-                outer: while (enabled) {
+                BluetoothConnection c = null;
+                while (enabled) {
                     /* Only have one incoming connection active at a time */
-                    BluetoothConnection c = null;
-                    while (c == null) {
+                    if (c == null) {
                         c = listen();
-                    }
-                    while (c.isConnected()) {
+                    } else if (c.isConnected()) {
                         try {
-                            Thread.sleep(1000); /* Nasty */
+                            Thread.sleep(100);
                         } catch (InterruptedException e) {
-                            synchronized (lock) {
-                                enabled = false;
-                            }
-                            break outer;
+                            break;
                         }
+                    } else {
+                        c = null;
                     }
                 }
+                System.out.println("SPP server stopped");
             } catch (IOException e) {
                 /* Only display an error message if listenning is
                  * enabled */
                 System.out.println("SPP server error: " +
                                    e.getMessage());
+            } finally {
+                synchronized (lock) {
+                    enabled = false;
+                }
             }
         }
 
