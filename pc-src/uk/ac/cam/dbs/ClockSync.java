@@ -124,8 +124,14 @@ public class ClockSync
                 }
             }
 
+
+            /* Sleep for UPDATE_PERIOD + a random delay between 0 and
+             * UPDATE_PERIOD/2. This is to avoid multiple devices
+             * phase-locking their clock sync loops. */
             try {
-                Thread.sleep(UPDATE_PERIOD);
+                int sleepTime = (int) (UPDATE_PERIOD *
+                                       (1.0 + Math.random() / 2));
+                Thread.sleep(sleepTime);
             } catch (InterruptedException e) {
                 System.err.println("Stopping clock sync service.");
                 break;
