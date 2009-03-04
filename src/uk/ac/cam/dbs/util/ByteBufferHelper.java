@@ -20,6 +20,16 @@
 
 package uk.ac.cam.dbs.util;
 
+/** <p>Convenience class for working with byte arrays. Contains static
+ * methods for storing and retrieving, signed and unsigned,
+ * arbitrary-length integers from byte arrays.</p>
+ *
+ * <p>It is often useful to import these methods directly into a class:</p>
+ * <pre>
+ * import static uk.ac.cam.dbs.util.ByteBufferHelper.numFromBytes;
+ * import static uk.ac.cam.dbs.util.ByteBufferHelper.numToBytes;
+ * </pre>
+ */
 public class ByteBufferHelper {
 
     /** <p>Parses a signed integer from a byte array. Parses an

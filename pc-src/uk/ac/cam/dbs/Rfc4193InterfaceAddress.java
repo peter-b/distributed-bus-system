@@ -24,7 +24,25 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Random;
 
+/** <p>An RFC 4193 compatible 128-bit interface address. This address is
+ * constructed according to the algorithm outlined in RFC 4193,
+ * "Unique Local IPv6 Unicast Addresses", and as such is a valid IPv6
+ * address.</p>
+ *
+ * <p>This is used by network nodes running on a general-purpose
+ * computer in order to avoid interface address conflicts when
+ * multiple nodes are running on the same hardware.</p>
+ *
+ * <p><b>Warning:</b> this algorithm will only return one unique
+ * address per millisecond for the same MAC address.</p>
+ */
 public class Rfc4193InterfaceAddress extends InterfaceAddress {
+    /** Creates an RFC 4193-compatible address. <code>mac</code>
+     * should be a 48-bit or 64-bit hardware address, which is
+     * converted to Modified EUI-64 format as described in RFC 3513,
+     * "Internet Protocol Version 6 (IPv6) Addressing Architecture".
+     * @param mac  48-bit or 64-bit hardware address.
+     */
     public Rfc4193InterfaceAddress(byte[] mac) {
         super (makeBytes(mac));
     }

@@ -282,6 +282,13 @@ public class TCPIPConnectionManager implements BusConnectionServer {
 
     /* ************************************************** */
 
+    /** Get the local interface address.
+     *
+     * @return the interface address used by TCP/IP
+     * <code>BusConnection</code>s created by this connection manager.
+     *
+     * @see BusConnection#getLocalAddress()
+     */
     public InterfaceAddress getLocalAddress() {
         if (localAddress != null) return localAddress;
 

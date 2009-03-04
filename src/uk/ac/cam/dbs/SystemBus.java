@@ -237,7 +237,7 @@ public class SystemBus implements UDPMessageListener {
     /** <p>Get a list of active connections.</p>
      *
      * <p><b>Warning:</b> the <code>Vector</code> returned by this
-     * call is owned by the <code>SystemBus<code> instance, and should
+     * call is owned by the <code>SystemBus</code> instance, and should
      * not be modified.</p>
      *
      * @return a <code>Vector</code> of

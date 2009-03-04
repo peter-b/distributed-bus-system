@@ -23,7 +23,10 @@ package uk.ac.cam.dbs.bfrp;
 import java.util.EventListener;
 import uk.ac.cam.dbs.*;
 
-/** An event listener for BFRP route changes. */
+/** An event listener for BFRP route changes.
+ * @see BruteForceRouting#addRouteChangeListener(BfrpRouteChangeListener)
+ * @see BruteForceRouting#removeRouteChangeListener(BfrpRouteChangeListener)
+ */
 public interface BfrpRouteChangeListener extends EventListener {
 
     /** Status value indicating route was added */
@@ -43,8 +46,9 @@ public interface BfrpRouteChangeListener extends EventListener {
      * <p>All other possible values for <code>status</code> are
      * reserved.</p>
      *
-     * @param device Main address of device for which routing changed.
+     * @param node   Main address of the network node for which
+     *               routing changed.
      * @param status How the route changed.
      */
-    void routeChanged(InterfaceAddress device, int status);
+    void routeChanged(InterfaceAddress node, int status);
 }

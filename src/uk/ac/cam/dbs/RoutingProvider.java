@@ -20,6 +20,12 @@
 
 package uk.ac.cam.dbs;
 
+/** A provider of routing information. */
 public interface RoutingProvider {
+    /** Get the next hop towards a remote device or interface.
+     * @param dest The address of the remote device or interface.
+     * @return the optimal connection over which to send a message in
+     * order to reach the remote device or interface.
+     */
     BusConnection nextHop(InterfaceAddress dest);
 }

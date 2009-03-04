@@ -55,6 +55,13 @@ public class BluetoothConnectionManager implements BusConnectionServer {
     /** The interface address of Bluetooth interface */;
     private InterfaceAddress localAddress;
 
+    /** Get the local interface address.
+     *
+     * @return the interface address used by Bluetooth
+     * <code>BusConnection</code>s created by this connection manager.
+     *
+     * @see BusConnection#getLocalAddress()
+     */
     public InterfaceAddress getLocalAddress() {
         if (localAddress == null) {
         }

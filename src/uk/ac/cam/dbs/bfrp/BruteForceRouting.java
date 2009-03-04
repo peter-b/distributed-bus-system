@@ -29,6 +29,10 @@ import java.util.Vector;
 import static uk.ac.cam.dbs.util.ByteBufferHelper.numFromBytesUnsigned;
 import static uk.ac.cam.dbs.util.ByteBufferHelper.numToBytes;
 
+/** <p>"Brute force" routing protocol main class.</p>
+ *
+ * </p>See the package documentation for examples of use.</p>
+ */
 public class BruteForceRouting
     implements Runnable, NamingProvider, RoutingProvider,
                UDPMessageListener {
@@ -45,7 +49,8 @@ public class BruteForceRouting
     static final int UDP_PORT = 50054;
     static final int HELLO_TIME = 1000;
 
-    public BruteForceRouting() {
+    /** Initialise a new "brute force routing" daemon. */
+    protected BruteForceRouting() {
         lastSeq = 0;
         seqLock = new Object();
         mainAddr = null;
@@ -53,25 +58,50 @@ public class BruteForceRouting
         routeListeners = new Vector();
     }
 
+    /** Create a new "brute force routing" daemon. The daemon uses the
+     * specified <code>mainAddress</code> in all of its
+     * communications.
+     *
+     * @param mainAddress Address uniquely identifying this device.
+     */
     public BruteForceRouting(InterfaceAddress mainAddress) {
         this();
         this.setMainAddress(mainAddress);
     }
 
+    /** {@inheritDoc}
+     * @param dest {@inheritDoc}
+     * @return {@inheritDoc}
+     */
     public BusConnection nextHop(InterfaceAddress dest) {
         DeviceRecord rec = getDeviceRecord(dest);
         if ((rec == null) || !rec.routeValid) return null;
         return rec.hop;
     }
 
+    /** {@inheritDoc}
+     * @param deviceName {@inheritDoc}
+     * @return {@inheritDoc}
+     */
     public InterfaceAddress getAddressByName(String deviceName) {
         throw new RuntimeException("Not implemented");
     }
 
+    /** {@inheritDoc}
+     * @param address {@inheritDoc}
+     * @return {@inheritDoc}
+     */
     public String getNameByAddress(InterfaceAddress address) {
         throw new RuntimeException("Not implemented");
     }
 
+    /** <p>The main loop method for the "brute force routing"
+     * daemon. This should normally not be run directly, but rather
+     * via the <code>start()</code> method of a new thread.</p>
+     *
+     * <p>See the package documentation for example code for starting
+     * a BFRP service.</p>
+     */
     public void run() {
         try {
             SystemBus.getSystemBus().addUDPService(this, UDP_PORT);
@@ -93,6 +123,9 @@ public class BruteForceRouting
         }
     }
 
+    /** Add a listener for route change events.
+     * @param l  Listener object to add.
+     */
     public void addRouteChangeListener(BfrpRouteChangeListener l) {
         synchronized (routeListeners) {
             if (routeListeners.indexOf(l) == -1) {
@@ -101,6 +134,9 @@ public class BruteForceRouting
         }
     }
 
+    /** Remove a route change event listener.
+     * @param l  Listener object to remove.
+     */
     public void removeRouteChangeListener(BfrpRouteChangeListener l) {
         synchronized (routeListeners) {
             routeListeners.removeElement(l);
@@ -117,10 +153,18 @@ public class BruteForceRouting
         }
     }
 
+    /** Set the main address used by the routing service. The
+     * <code>addr</code> will be used to uniquely identify the network
+     * node.
+     * @param addr New main address.
+     */
     public void setMainAddress(InterfaceAddress addr) {
         mainAddr = addr;
     }
 
+    /** Get the main address used by the routing service.
+     * @return The address uniquely identifying this network node.
+     */
     public InterfaceAddress getMainAddress() {
         return mainAddr;
     }
@@ -210,6 +254,13 @@ public class BruteForceRouting
         }
     }
 
+    /** Handle a received UDP message. Processes the received message,
+     * updating the routing database and forwarding the message to
+     * other network nodes as required.
+     *
+     * @param conn {@inheritDoc}
+     * @param msg {@inheritDoc}
+     */
     public void recvUDPMessage(BusConnection conn, UDPMessage msg) {
         /* For now, devices don't advertise name or alternative
          * interface addresses, so the payload should be a fixed
@@ -256,6 +307,7 @@ public class BruteForceRouting
 
         if (!relay) {
             /* If message that arrived has newer sequence number, update & relay */
+            /* FIXME check for wraparound */
             if (seq > record.seq) {
                 relay = true;
             }

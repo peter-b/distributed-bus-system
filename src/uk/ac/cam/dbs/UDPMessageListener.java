@@ -25,7 +25,11 @@ import java.util.EventListener;
 /** Handler for UDP message receipt. */
 public interface UDPMessageListener extends EventListener {
 
-    /** Handle a received UDP message. */
+    /** Handle a received UDP message.
+     * @param connection The connection over which the message was
+     *                   received.
+     * @param msg        The UDP message to be processed.
+     */
     void recvUDPMessage(BusConnection connection, UDPMessage msg);
 
 }
