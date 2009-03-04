@@ -343,7 +343,11 @@ public class SystemBus implements UDPMessageListener {
                     Thread.yield();
                 }
             } catch (IOException e) {
-                /* Die */
+                try {
+                    conn.disconnect();
+                } catch (IOException f) {
+                    System.err.println("UDPMonitor: Disconnect failed");
+                }
             } finally {
                 removeConnection(conn);
             }
