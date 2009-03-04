@@ -279,12 +279,15 @@ public class BluetoothConnectionManager implements BusConnectionServer {
     protected BluetoothConnectionManager() throws BluetoothStateException {
         server = new BluetoothServer();
 
-        /* FIXME use Rfc4193InterfaceAddress */
-        String mac = LocalDevice.getLocalDevice().getBluetoothAddress();
-        String addr= "0:0:0:0:" + mac.substring(0, 4) + ":" +
-            mac.substring(4,6) + "ff:fe" + mac.substring(6,8) + ":" +
-            mac.substring(8,12);
-        localAddress = new InterfaceAddress(addr);
+        String macStr = LocalDevice.getLocalDevice().getBluetoothAddress();
+        byte[] mac = new byte[6];
+        for (int i = 0; i < 6; i++) {
+            String hex = macStr.substring(i*2, i*2+2);
+            int x = Integer.parseInt(hex,16);
+            if (x >= 0x80) x -= 0x100;
+            mac[i] = (byte) x;
+        }
+        localAddress = new Rfc4193InterfaceAddress(mac);
     }
 
     /** Get the Bluetooth connection manager
