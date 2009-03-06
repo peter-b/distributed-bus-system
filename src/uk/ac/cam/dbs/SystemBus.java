@@ -362,6 +362,41 @@ public class SystemBus implements UDPMessageListener {
 
     /* ************************************************** */
 
+    private InterfaceAddress mainAddress;
+
+    /** Get the main address of the local bus system node. If no
+     * address has been set with <code>setMainAddress()</code>,
+     * attempts to automatically determine an address using the first
+     * active connection. If no address can be determined, returns
+     * <code>null</code>.
+     *
+     * @return The main address of the bus system node or
+     *         <code>null</code> if none can be determined.
+     */
+    public InterfaceAddress getMainAddress() {
+        if (mainAddress == null) {
+            try {
+                BusConnection c =
+                    (BusConnection) connections.elementAt(0);
+                mainAddress = c.getLocalAddress();
+            } catch (ArrayIndexOutOfBoundsException e) {
+                /* No address available */
+            }
+        }
+        return mainAddress;
+    }
+
+    /** Set the main address of the bus system node. The address must
+     * be unique to the node.
+     *
+     * @param addr Address to use as new main address.
+     */
+    public void setMainAddress(InterfaceAddress addr) {
+        mainAddress = addr;
+    }
+
+    /* ************************************************** */
+
     /** Create a new system bus. Do not call this directly: use
      * getSystemBus().
      *
@@ -372,6 +407,7 @@ public class SystemBus implements UDPMessageListener {
         connectionMonitors = new Vector();
         connectionListeners = new Vector();
         portBindings = new Vector();
+        mainAddress = null;
     }
 
     /** The singleton instance of the system bus */

@@ -32,6 +32,8 @@ import static uk.ac.cam.dbs.util.ByteBufferHelper.numToBytes;
 /** <p>"Brute force" routing protocol main class.</p>
  *
  * </p>See the package documentation for examples of use.</p>
+ *
+ * @see uk.ac.cam.dbs.bfrp
  */
 public class BruteForceRouting
     implements Runnable, NamingProvider, RoutingProvider,
@@ -39,8 +41,6 @@ public class BruteForceRouting
 
     int lastSeq;
     Object seqLock;
-
-    InterfaceAddress mainAddr;
 
     /* K = InterfaceAddress, V = DeviceRecord */
     Hashtable devices;
@@ -50,23 +50,11 @@ public class BruteForceRouting
     static final int HELLO_TIME = 1000;
 
     /** Initialise a new "brute force routing" daemon. */
-    protected BruteForceRouting() {
+    public BruteForceRouting() {
         lastSeq = 0;
         seqLock = new Object();
-        mainAddr = null;
         devices = new Hashtable();
         routeListeners = new Vector();
-    }
-
-    /** Create a new "brute force routing" daemon. The daemon uses the
-     * specified <code>mainAddress</code> in all of its
-     * communications.
-     *
-     * @param mainAddress Address uniquely identifying this device.
-     */
-    public BruteForceRouting(InterfaceAddress mainAddress) {
-        this();
-        this.setMainAddress(mainAddress);
     }
 
     /** {@inheritDoc}
@@ -143,6 +131,7 @@ public class BruteForceRouting
         }
     }
 
+    /* Notifies all of the listeners that a route has changed */
     private void dispatchRouteChange(InterfaceAddress addr, int status) {
         synchronized (routeListeners) {
             for (int i = 0; i < routeListeners.size(); i++) {
@@ -153,23 +142,12 @@ public class BruteForceRouting
         }
     }
 
-    /** Set the main address used by the routing service. The
-     * <code>addr</code> will be used to uniquely identify the network
-     * node.
-     * @param addr New main address.
-     */
-    public void setMainAddress(InterfaceAddress addr) {
-        mainAddr = addr;
-    }
-
-    /** Get the main address used by the routing service.
-     * @return The address uniquely identifying this network node.
-     */
-    public InterfaceAddress getMainAddress() {
-        return mainAddr;
-    }
-
+    /* Sends HELLO message to all adjacent nodes */
     private void sendHelloMessages() {
+        InterfaceAddress mainAddress =
+            SystemBus.getSystemBus().getMainAddress();
+        if (mainAddress == null) return;
+
         byte[] payload = new byte[24];
         /* Message size */
         numToBytes(24, payload, 0, 2);
@@ -183,7 +161,7 @@ public class BruteForceRouting
         numToBytes(1, payload, 4, 2);
         /* Time for which to treat HELLO as valid */
         numToBytes(2*HELLO_TIME, payload, 6, 2);
-        byte[] addrBytes = getMainAddress().getBytes();
+        byte[] addrBytes = mainAddress.getBytes();
         for (int i = 0; i < 16; i++) {
             payload[i+8] = addrBytes[i];
         }
@@ -204,6 +182,7 @@ public class BruteForceRouting
         }
     }
 
+    /* Checks through device records, flagging those that have timed out */
     private void purgeDeviceRecords() {
         long now = System.currentTimeMillis();
         synchronized (devices) {
