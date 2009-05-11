@@ -10,7 +10,8 @@
   <property name="lib.pc" location="pc-lib"/>
   <property name="lib.nxt" location="nxt-lib"/>
   <property name="lib.common" location="lib"/>
-  <property name="doc" location="doc"/>
+  <property name="doc.pc" location="pc-doc"/>
+  <property name="doc.nxt" location="nxt-doc"/>
 
   <path id="classpath.lib.common">
     <fileset dir="${lib.common}">
@@ -64,18 +65,44 @@
     </javac>
   </target>
 
-  <target name="doc" description="Create API documentation">
-    <mkdir dir="${doc}"/>
-    <javadoc destdir="${doc}"
+  <target name="doc" description="Create API documentation"
+          depends="doc.pc,doc.nxt"/>
+
+  <target name="doc.pc" description="Create PC API documentation">
+    <mkdir dir="${doc.pc}"/>
+    <javadoc destdir="${doc.pc}"
              classpathref="classpath.lib.pc"
              sourcepathref="srcpath.pc"/>
+  </target>
+
+  <target name="doc.nxt" description="Create NXT API documentation">
+    <mkdir dir="${doc.nxt}"/>
+    <javadoc destdir="${doc.nxt}"
+             classpathref="classpath.lib.nxt"
+             sourcepathref="srcpath.nxt"/>
+  </target>
+
+  <target name="dist" description="Create JARs for distribution"
+          depends="compile,doc">
+    <mkdir dir="${dist}"/>
+    <jar destfile="${dist}/dbs-pc.jar"
+         basedir="${build.pc}"
+         includes="uk/**/*.class"/>
+    <jar destfile="${dist}/dbs-nxt.jar"
+         basedir="${build.nxt}"
+         includes="uk/**/*.class java/**/*.class"/>
+    <zip destfile="${dist}/dbs-doc-pc.zip"
+         basedir="${doc.pc}"/>
+    <zip destfile="${dist}/dbs-doc-nxt.zip"
+         basedir="${doc.nxt}"/>
   </target>
 
   <target name="clean" description="Clean up generated files">
     <delete dir="${build.pc}"/>
     <delete dir="${build.nxt}"/>
     <delete dir="${dist}"/>
-    <delete dir="${doc}"/>
+    <delete dir="${doc.pc}"/>
+    <delete dir="${doc.nxt}"/>
   </target>
 
 </project>

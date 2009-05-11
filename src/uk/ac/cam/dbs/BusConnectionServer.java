@@ -20,9 +20,25 @@
 
 package uk.ac.cam.dbs;
 
+/** A connection manager that listens for incoming connections. */
+
 public interface BusConnectionServer {
 
+    /** Test if this <code>BusConnectionServer</code> is accepting
+     * incoming connections.
+     *
+     * @return <code>true</code> if incoming connections are being
+     *         accepted, otherwise <code>false</code>.
+     */
     boolean isListenEnabled();
-    void setListenEnabled(boolean enabled);
 
+    /** Set whether this <code>BusConnectionServer</code> should
+     * accept incoming connections.
+     *
+     * @param enabled If <code>true</code>, the
+     *                <code>BusConnectionServer</code> will accept
+     *                incoming connections; if <code>false</code>,
+     *                incoming connections will be rejected.
+     */
+    void setListenEnabled(boolean enabled);
 }

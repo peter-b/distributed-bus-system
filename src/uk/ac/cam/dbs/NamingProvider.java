@@ -20,7 +20,31 @@
 
 package uk.ac.cam.dbs;
 
+/**
+ * <p>A provider of naming services.</p>
+ *
+ * <p>A <code>NamingProvider</code> associates 128-bit interface
+ * addresses with bus node hostnames, and allows applications to convert one to
+ * another.</p>
+ */
 public interface NamingProvider {
+
+    /** Get an <code>InterfaceAddress</code> for a particular hostname.
+     *
+     * @param deviceName Hostname for which to retrieve an address.
+     *
+     * @return the <code>InterfaceAddress</code> corresponding to
+     *         <code>deviceName</code>, or <code>null</code> if none
+     *         is known.
+     */
     InterfaceAddress getAddressByName(String deviceName);
+
+    /** Get a hostname for a particular <code>InterfaceAddress</code>
+     *
+     * @param address <code>InterfaceAddress</code> for which to
+     * retrieve a hostname.
+     *
+     * @return the hostname of the bus node with the given <code>address</code>.
+     */
     String getNameByAddress(InterfaceAddress address);
 }
