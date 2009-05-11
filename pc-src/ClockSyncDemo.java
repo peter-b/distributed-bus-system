@@ -75,8 +75,7 @@ public class ClockSyncDemo extends JFrame
                 BluetoothConnectionManager.getConnectionManager();
 
             /* Start up routing service */
-            BruteForceRouting routingService =
-                new BruteForceRouting(bt.getLocalAddress());
+            BruteForceRouting routingService = new BruteForceRouting();
             routingService.addRouteChangeListener(demo);
             Thread routeThread = new Thread(routingService);
             routeThread.setDaemon(true);

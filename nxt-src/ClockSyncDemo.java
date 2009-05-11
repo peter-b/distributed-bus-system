@@ -48,8 +48,7 @@ public class ClockSyncDemo {
         clockThread.start();
 
         /* Start up routing service */
-        BruteForceRouting routingService =
-            new BruteForceRouting(bt.getLocalAddress());
+        BruteForceRouting routingService = new BruteForceRouting();
         BfrpRouteChangeListener notifier =
             new BfrpRouteChangeListener() {
                 public void routeChanged (InterfaceAddress addr, int status) {
