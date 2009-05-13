@@ -18,7 +18,7 @@
  * USA
  */
 
-package uk.ac.cam.dbs.bfrp;
+package uk.ac.cam.dbs.sfrp;
 
 import uk.ac.cam.dbs.*;
 import java.io.IOException;
@@ -29,13 +29,13 @@ import java.util.Vector;
 import static uk.ac.cam.dbs.util.ByteBufferHelper.numFromBytesUnsigned;
 import static uk.ac.cam.dbs.util.ByteBufferHelper.numToBytes;
 
-/** <p>"Brute force" routing protocol main class.</p>
+/** <p>Simplified Flood Routing Protocol main class.</p>
  *
  * </p>See the package documentation for examples of use.</p>
  *
- * @see uk.ac.cam.dbs.bfrp
+ * @see uk.ac.cam.dbs.sfrp
  */
-public class BruteForceRouting
+public class SimplifiedFloodRouting
     implements Runnable, NamingProvider, RoutingProvider,
                DMPMessageListener {
 
@@ -49,8 +49,8 @@ public class BruteForceRouting
     static final int DMP_PORT = 50054;
     static final int HELLO_TIME = 1000;
 
-    /** Initialise a new "brute force routing" daemon. */
-    public BruteForceRouting() {
+    /** Initialise a new SFRP daemon. */
+    public SimplifiedFloodRouting() {
         lastSeq = 0;
         seqLock = new Object();
         devices = new Hashtable();
@@ -83,12 +83,12 @@ public class BruteForceRouting
         throw new RuntimeException("Not implemented");
     }
 
-    /** <p>The main loop method for the "brute force routing"
-     * daemon. This should normally not be run directly, but rather
-     * via the <code>start()</code> method of a new thread.</p>
+    /** <p>The main loop method for the SFRP daemon. This should
+     * normally not be run directly, but rather via the
+     * <code>start()</code> method of a new thread.</p>
      *
      * <p>See the package documentation for example code for starting
-     * a BFRP service.</p>
+     * a SFRP service.</p>
      */
     public void run() {
         try {
@@ -114,7 +114,7 @@ public class BruteForceRouting
     /** Add a listener for route change events.
      * @param l  Listener object to add.
      */
-    public void addRouteChangeListener(BfrpRouteChangeListener l) {
+    public void addRouteChangeListener(SfrpRouteChangeListener l) {
         synchronized (routeListeners) {
             if (routeListeners.indexOf(l) == -1) {
                 routeListeners.addElement(l);
@@ -125,7 +125,7 @@ public class BruteForceRouting
     /** Remove a route change event listener.
      * @param l  Listener object to remove.
      */
-    public void removeRouteChangeListener(BfrpRouteChangeListener l) {
+    public void removeRouteChangeListener(SfrpRouteChangeListener l) {
         synchronized (routeListeners) {
             routeListeners.removeElement(l);
         }
@@ -135,8 +135,8 @@ public class BruteForceRouting
     private void dispatchRouteChange(InterfaceAddress addr, int status) {
         synchronized (routeListeners) {
             for (int i = 0; i < routeListeners.size(); i++) {
-                BfrpRouteChangeListener l =
-                    (BfrpRouteChangeListener) routeListeners.elementAt(i);
+                SfrpRouteChangeListener l =
+                    (SfrpRouteChangeListener) routeListeners.elementAt(i);
                 l.routeChanged(addr, status);
             }
         }
@@ -177,7 +177,7 @@ public class BruteForceRouting
             try {
                 bus.sendDMPMessage(c, msg);
             } catch (IOException e) {
-                System.err.println("BFRP flood failed: " + e.getMessage());
+                System.err.println("SFRP flood failed: " + e.getMessage());
             }
         }
     }
@@ -195,7 +195,7 @@ public class BruteForceRouting
                 if (now - rec.lastUpdate > rec.validTime) {
                     rec.routeValid = false;
                     /* Notify listeners that the route has gone */
-                    dispatchRouteChange(addr, BfrpRouteChangeListener.ROUTE_REMOVED);
+                    dispatchRouteChange(addr, SfrpRouteChangeListener.ROUTE_REMOVED);
                 }
             }
         }
@@ -255,7 +255,7 @@ public class BruteForceRouting
          */
         byte[] payload = msg.getPayload();
         if (payload.length != 24) {
-            System.out.println("BFRP message malformed: bad DMP payload length.");
+            System.out.println("SFRP message malformed: bad DMP payload length.");
             return;
         }
 
@@ -323,12 +323,12 @@ public class BruteForceRouting
             try {
                 bus.sendDMPMessage(relayconn, relaymsg);
             } catch (IOException e) {
-                System.err.println("BFRP relay failed: " + e.getMessage());
+                System.err.println("SFRP relay failed: " + e.getMessage());
             }
         }
 
         /* Notify listeners if this is a new route */
         if (newRoute)
-            dispatchRouteChange(deviceAddr, BfrpRouteChangeListener.ROUTE_ADDED);
+            dispatchRouteChange(deviceAddr, SfrpRouteChangeListener.ROUTE_ADDED);
     }
 }

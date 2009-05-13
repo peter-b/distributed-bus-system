@@ -18,16 +18,16 @@
  * USA
  */
 
-package uk.ac.cam.dbs.bfrp;
+package uk.ac.cam.dbs.sfrp;
 
 import java.util.EventListener;
 import uk.ac.cam.dbs.*;
 
-/** An event listener for BFRP route changes.
- * @see BruteForceRouting#addRouteChangeListener(BfrpRouteChangeListener)
- * @see BruteForceRouting#removeRouteChangeListener(BfrpRouteChangeListener)
+/** An event listener for SFRP route changes.
+ * @see SimplifiedFloodRouting#addRouteChangeListener(SfrpRouteChangeListener)
+ * @see SimplifiedFloodRouting#removeRouteChangeListener(SfrpRouteChangeListener)
  */
-public interface BfrpRouteChangeListener extends EventListener {
+public interface SfrpRouteChangeListener extends EventListener {
 
     /** Status value indicating route was added */
     static final int ROUTE_ADDED = 1;

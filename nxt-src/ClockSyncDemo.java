@@ -19,7 +19,7 @@
  */
 
 import uk.ac.cam.dbs.*;
-import uk.ac.cam.dbs.bfrp.*;
+import uk.ac.cam.dbs.sfrp.*;
 
 import java.io.IOException;
 import lejos.nxt.LCD;
@@ -48,9 +48,9 @@ public class ClockSyncDemo {
         clockThread.start();
 
         /* Start up routing service */
-        BruteForceRouting routingService = new BruteForceRouting();
-        BfrpRouteChangeListener notifier =
-            new BfrpRouteChangeListener() {
+        SimplifiedFloodRouting routingService = new SimplifiedFloodRouting();
+        SfrpRouteChangeListener notifier =
+            new SfrpRouteChangeListener() {
                 public void routeChanged (InterfaceAddress addr, int status) {
                     String message = "# Route to [" + addr.toString() + "] ";
                     if (status == ROUTE_ADDED) {

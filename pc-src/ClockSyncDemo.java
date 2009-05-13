@@ -19,7 +19,7 @@
  */
 
 import uk.ac.cam.dbs.*;
-import uk.ac.cam.dbs.bfrp.*;
+import uk.ac.cam.dbs.sfrp.*;
 
 import gnu.getopt.Getopt;
 import java.awt.Container;
@@ -39,7 +39,7 @@ import javax.swing.JLabel;
 import javax.swing.Timer;
 
 public class ClockSyncDemo extends JFrame
-    implements BusConnectionChangeListener, BfrpRouteChangeListener {
+    implements BusConnectionChangeListener, SfrpRouteChangeListener {
 
     TimeProvider networkTime;
     TimeProvider internalTime;
@@ -75,7 +75,7 @@ public class ClockSyncDemo extends JFrame
                 BluetoothConnectionManager.getConnectionManager();
 
             /* Start up routing service */
-            BruteForceRouting routingService = new BruteForceRouting();
+            SimplifiedFloodRouting routingService = new SimplifiedFloodRouting();
             routingService.addRouteChangeListener(demo);
             Thread routeThread = new Thread(routingService);
             routeThread.setDaemon(true);

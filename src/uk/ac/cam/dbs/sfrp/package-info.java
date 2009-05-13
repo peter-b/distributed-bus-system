@@ -19,9 +19,9 @@
  */
 
 /**
- * <h1>"Brute Force" Routing Protocol (BFRP)</h1>
+ * <h1>Simplified Flood Routing Protocol (SFRP)</h1>
  *
- * <p>The "brute force" routing protocol is a very simple and
+ * <p>The simplified flood routing protocol is a very simple and
  * inefficient route-finding protocol that detects active end-to-end
  * routes by a message flooding algorithm.</p>
  *
@@ -30,23 +30,23 @@
  * <h2>Using the protocol</h2>
  *
  * <p>The following code snippet provides an example of starting a
- * BFRP service:</p>
+ * SFRP service:</p>
  *
  * <pre>
  * InterfaceAddress addr = &lt;get main address for device&gt;;
- * BruteForceRouting routingService = new BruteForceRouting(addr);
+ * SimplifiedFloodRouting routingService = new SimplifiedFloodRouting(addr);
  * Thread routeThread = new Thread(routingService);
  * routeThread.setDaemon(true);
  * routeThread.start();
  * </pre>
  *
  * <p>The service has a mechanism for notifying application code when
- * a route changes, using the <code>BfrpRouteChangeListener</code>
+ * a route changes, using the <code>SfrpRouteChangeListener</code>
  * interface. For example:</p>
  *
  * <pre>
- * BfrpRouteChangeListener notifier =
- *     new BfrpRouteChangeListener() {
+ * SfrpRouteChangeListener notifier =
+ *     new SfrpRouteChangeListener() {
  *         public void routeChanged (InterfaceAddress addr, int status) {
  *             String message = "# Route to [" + addr.toString() + "] ";
  *             if (status == ROUTE_ADDED) {
@@ -106,4 +106,4 @@
  * @see uk.ac.cam.dbs.DMPMessage
  */
 
-package uk.ac.cam.dbs.bfrp;
+package uk.ac.cam.dbs.sfrp;
