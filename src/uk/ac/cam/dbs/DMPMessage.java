@@ -27,7 +27,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.EOFException;
 
-/** <p>A message sent over UDP. A message consists of a payload, with
+/** <p>A message sent over DMP. A message consists of a payload, with
  * source and destination ports.</p>
  *
  * <p>Instances of this class are immutable: this is to ensure that they
@@ -35,9 +35,9 @@ import java.io.EOFException;
  * being altered unexpectedly.</p>
  *
  * @see SystemBus
- * @see UDPMessageListener
+ * @see DMPMessageListener
  */
-public class UDPMessage {
+public class DMPMessage {
     /** Port this message should be delivered to. */
     private int to;
     /** Port this message was sent from. */
@@ -45,13 +45,13 @@ public class UDPMessage {
     /** Payload data */
     private byte[] payload;
 
-    /** Create a new <code>UDPMessage</code>.
+    /** Create a new <code>DMPMessage</code>.
      *
      * @param toPort   Port number the message should be delivered to.
      * @param fromPort The port number the message was sent from.
      * @param payload  The contents of the message.
      **/
-    public UDPMessage (int toPort, int fromPort, byte[] payload) {
+    public DMPMessage (int toPort, int fromPort, byte[] payload) {
 
         to = toPort;
         from = fromPort;
@@ -123,7 +123,7 @@ public class UDPMessage {
             out.writeChar((char) from);
             out.writeChar((char) to);
             out.writeChar((char) len);
-            out.writeChar(0); /* Don't bother with checksum */
+            out.writeChar(0); /* FIXME Don't bother with checksum */
             out.write(getPayload(), 0, len);
             out.flush();
         }
@@ -136,7 +136,7 @@ public class UDPMessage {
      *
      * @throws IOException if an error occurs in reception.
      */
-    public static UDPMessage recv(DataInputStream in)
+    public static DMPMessage recv(DataInputStream in)
         throws IOException {
 
         int from, to;
@@ -155,7 +155,7 @@ public class UDPMessage {
             len =  (len  < 0) ? (len  + 0x10000) : len;
             sum =  (sum  < 0) ? (sum  + 0x10000) : sum;
 
-            /* Don't bother validating the checksum */
+            /* FIXME: Don't bother validating the checksum */
 
             /* Grab payload */
             buf = new byte[len];
@@ -169,6 +169,6 @@ public class UDPMessage {
                 read_len += status;
             }
         }
-        return new UDPMessage(to, from, buf);
+        return new DMPMessage(to, from, buf);
     }
 }

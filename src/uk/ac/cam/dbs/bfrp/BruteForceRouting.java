@@ -37,7 +37,7 @@ import static uk.ac.cam.dbs.util.ByteBufferHelper.numToBytes;
  */
 public class BruteForceRouting
     implements Runnable, NamingProvider, RoutingProvider,
-               UDPMessageListener {
+               DMPMessageListener {
 
     int lastSeq;
     Object seqLock;
@@ -46,7 +46,7 @@ public class BruteForceRouting
     Hashtable devices;
     Vector routeListeners;
 
-    static final int UDP_PORT = 50054;
+    static final int DMP_PORT = 50054;
     static final int HELLO_TIME = 1000;
 
     /** Initialise a new "brute force routing" daemon. */
@@ -92,9 +92,9 @@ public class BruteForceRouting
      */
     public void run() {
         try {
-            SystemBus.getSystemBus().addUDPService(this, UDP_PORT);
-        } catch (UDPBindException e) {
-            System.err.println("Could not bind UDP port: " + e.getMessage());
+            SystemBus.getSystemBus().addDMPService(this, DMP_PORT);
+        } catch (DMPBindException e) {
+            System.err.println("Could not bind DMP port: " + e.getMessage());
             return;
         }
 
@@ -166,8 +166,8 @@ public class BruteForceRouting
             payload[i+8] = addrBytes[i];
         }
 
-        /* Create a UDP message */
-        UDPMessage msg = new UDPMessage(UDP_PORT, UDP_PORT, payload);
+        /* Create a DMP message */
+        DMPMessage msg = new DMPMessage(DMP_PORT, DMP_PORT, payload);
 
         /* Send over each connection */
         SystemBus bus = SystemBus.getSystemBus();
@@ -175,7 +175,7 @@ public class BruteForceRouting
         for (int i = 0; i < conns.size(); i++) {
             BusConnection c = (BusConnection) conns.elementAt(i);
             try {
-                bus.sendUDPMessage(c, msg);
+                bus.sendDMPMessage(c, msg);
             } catch (IOException e) {
                 System.err.println("BFRP flood failed: " + e.getMessage());
             }
@@ -233,14 +233,14 @@ public class BruteForceRouting
         }
     }
 
-    /** Handle a received UDP message. Processes the received message,
+    /** Handle a received DMP message. Processes the received message,
      * updating the routing database and forwarding the message to
      * other network nodes as required.
      *
      * @param conn {@inheritDoc}
      * @param msg {@inheritDoc}
      */
-    public void recvUDPMessage(BusConnection conn, UDPMessage msg) {
+    public void recvDMPMessage(BusConnection conn, DMPMessage msg) {
         /* For now, devices don't advertise name or alternative
          * interface addresses, so the payload should be a fixed
          * size:
@@ -255,7 +255,7 @@ public class BruteForceRouting
          */
         byte[] payload = msg.getPayload();
         if (payload.length != 24) {
-            System.out.println("BFRP message malformed: bad UDP payload length.");
+            System.out.println("BFRP message malformed: bad DMP payload length.");
             return;
         }
 
@@ -312,7 +312,7 @@ public class BruteForceRouting
 
         /* Increment hop count */
         numToBytes(hops + 1, payload, 4, 2);
-        UDPMessage relaymsg = new UDPMessage(UDP_PORT, UDP_PORT, payload);
+        DMPMessage relaymsg = new DMPMessage(DMP_PORT, DMP_PORT, payload);
         SystemBus bus = SystemBus.getSystemBus();
 
         /* Relay message to all neighbours apart from sender */
@@ -321,7 +321,7 @@ public class BruteForceRouting
             BusConnection relayconn = (BusConnection) connections.elementAt(i);
             if (relayconn == conn) continue; /* Skip sender */
             try {
-                bus.sendUDPMessage(relayconn, relaymsg);
+                bus.sendDMPMessage(relayconn, relaymsg);
             } catch (IOException e) {
                 System.err.println("BFRP relay failed: " + e.getMessage());
             }

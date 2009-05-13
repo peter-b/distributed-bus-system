@@ -33,7 +33,7 @@ import java.io.DataOutputStream;
  * <p>The single <code>SystemBus</code> instance, obtained via
  * <code>getSystemBus()</code>, contains the global state of the
  * distributed bus system. It provides methods for sending and
- * receiving UDP messages, and registering and removing connections
+ * receiving DMP messages, and registering and removing connections
  * from being managed by the distributed bus.</p>
  *
  * <p>The bus system provides a low-level packet multiplexing service
@@ -41,45 +41,45 @@ import java.io.DataOutputStream;
  * connections. In order to do this, it runs one thread per
  * <code>BusConnection</code> which polls for incoming messages and
  * dispatches them to the appropriate
- * <code>UDPMessageListener</code>.</p>
+ * <code>DMPMessageListener</code>.</p>
  *
  * @see #getSystemBus()
  * @see BusConnection
- * @see UDPMessageListener
+ * @see DMPMessageListener
  */
-public class SystemBus implements UDPMessageListener {
+public class SystemBus implements DMPMessageListener {
 
-    /** A list of UDP port bindings */
+    /** A list of DMP port bindings */
     private Vector portBindings;
 
-    /** Bind a UDP <code>service</code> to a particular UDP
+    /** Bind a DMP <code>service</code> to a particular DMP
      * <code>port</code>.
      *
      * @param service The service to be notified if a message arrives
      *                for <code>port</code>.
      * @param port    The port number that service wishes to listen on.
      *
-     * @throws UDPBindException if the <code>port</code> has already
+     * @throws DMPBindException if the <code>port</code> has already
      *                          been bound.
      */
-    public void addUDPService(UDPMessageListener service, int port) throws UDPBindException {
+    public void addDMPService(DMPMessageListener service, int port) throws DMPBindException {
         if (service == null) {
             throw new IllegalArgumentException ("Invalid service");
         }
         /* Check that the port is not already bound */
         synchronized (portBindings) {
             for (int i = 0; i < portBindings.size(); i++) {
-                UDPBinding b = (UDPBinding) portBindings.elementAt(i);
+                DMPBinding b = (DMPBinding) portBindings.elementAt(i);
                 if (port == b.port) {
-                    throw new UDPBindException("Port " + Integer.toString(port) +
+                    throw new DMPBindException("Port " + Integer.toString(port) +
                                                " in use");
                 }
             }
-            portBindings.addElement(new UDPBinding(service, port));
+            portBindings.addElement(new DMPBinding(service, port));
         }
     }
 
-    /** Unbind a UDP service from a particular UDP port. After this
+    /** Unbind a DMP service from a particular DMP port. After this
      * method is called, <code>service</code> will no longer be
      * notified of messages arriving for <code>port</code>. If
      * <code>port</code> is -1, unbinds the service from <em>all</em>
@@ -88,10 +88,10 @@ public class SystemBus implements UDPMessageListener {
      * @param service The service to be unbound.
      * @param port    The port to be unbound, or -1 to match all ports.
      */
-    public void removeUDPService(UDPMessageListener service, int port) {
+    public void removeDMPService(DMPMessageListener service, int port) {
         synchronized (portBindings) {
             for (int i = 0; i < portBindings.size(); i++) {
-                UDPBinding b = (UDPBinding) portBindings.elementAt(i);
+                DMPBinding b = (DMPBinding) portBindings.elementAt(i);
                 if (service == b.service) {
                     /* If the port was specified, only remove that
                      * particular binding */
@@ -110,19 +110,19 @@ public class SystemBus implements UDPMessageListener {
         }
     }
 
-    /** Unbind a UDP service from all UDP ports. This is equivalent to
+    /** Unbind a DMP service from all DMP ports. This is equivalent to
      * calling:
      *
-     * <code>removeUDPService(service, -1).</code>
+     * <code>removeDMPService(service, -1).</code>
      *
      * @param service The service to be unbound.
      *
-     * @see #removeUDPService(UDPMessageListener, int) */
-    public void removeUDPService(UDPMessageListener service) {
-        removeUDPService(service, -1);
+     * @see #removeDMPService(DMPMessageListener, int) */
+    public void removeDMPService(DMPMessageListener service) {
+        removeDMPService(service, -1);
     }
 
-    /** Send a UDP message. Transmits <code>msg</code> on
+    /** Send a DMP message. Transmits <code>msg</code> on
      * <code>connection</code>.  If <code>connection</code> is
      * <code>null</code>, delivers the message locally.
      *
@@ -132,10 +132,10 @@ public class SystemBus implements UDPMessageListener {
      * @throws IOException if an error occurs while transmitting the
      *                     message.
      */
-    public void sendUDPMessage(BusConnection connection, UDPMessage msg)
+    public void sendDMPMessage(BusConnection connection, DMPMessage msg)
         throws IOException {
         if (connection == null) {
-            recvUDPMessage(connection, msg);
+            recvDMPMessage(connection, msg);
             return;
         }
 
@@ -151,7 +151,7 @@ public class SystemBus implements UDPMessageListener {
         }
     }
 
-    /** Deliver a UDP message. Examines the destination port of
+    /** Deliver a DMP message. Examines the destination port of
      * <code>msg</code>, and if there has been a service bound to that
      * port, delivers it to the service. If no service has been bound,
      * drops the <code>msg</code> silently.
@@ -159,14 +159,14 @@ public class SystemBus implements UDPMessageListener {
      * @param connection Connection the <code>msg</code> arrived from.
      * @param msg        Message to deliver.
      *
-     * @see UDPMessage#getToPort()
+     * @see DMPMessage#getToPort()
      */
-    public void recvUDPMessage(BusConnection connection, UDPMessage msg) {
+    public void recvDMPMessage(BusConnection connection, DMPMessage msg) {
         synchronized (portBindings) {
             for (int i = 0; i < portBindings.size(); i++) {
-                UDPBinding b = (UDPBinding) portBindings.elementAt(i);
+                DMPBinding b = (DMPBinding) portBindings.elementAt(i);
                 if (msg.getToPort() == b.port) {
-                    b.service.recvUDPMessage(connection, msg);
+                    b.service.recvDMPMessage(connection, msg);
                     return;
                 }
             }
@@ -174,11 +174,11 @@ public class SystemBus implements UDPMessageListener {
         }
     }
 
-    /** Binding of UDP service to UDP port */
-    private class UDPBinding {
-        UDPMessageListener service;
+    /** Binding of DMP service to DMP port */
+    private class DMPBinding {
+        DMPMessageListener service;
         int port;
-        UDPBinding(UDPMessageListener service, int port) {
+        DMPBinding(DMPMessageListener service, int port) {
             this.service = service;
             this.port = port;
         }
@@ -188,7 +188,7 @@ public class SystemBus implements UDPMessageListener {
 
     /** A list of active connections. */
     private Vector connections;
-    /** A list of UDPMonitors */
+    /** A list of DMPMonitors */
     private Vector connectionMonitors;
     /** A list of BusConnectionChangeListener. */
     private Vector connectionListeners;
@@ -268,7 +268,7 @@ public class SystemBus implements UDPMessageListener {
         }
 
         synchronized (connectionMonitors) {
-            UDPMonitor m = new UDPMonitor(connection);
+            DMPMonitor m = new DMPMonitor(connection);
             (new Thread(m)).start();
             connectionMonitors.addElement(m);
         }
@@ -299,7 +299,7 @@ public class SystemBus implements UDPMessageListener {
 
         synchronized (connectionMonitors) {
             for (int i = 0; i < connectionMonitors.size(); i++) {
-                UDPMonitor m = (UDPMonitor) connectionMonitors.elementAt(i);
+                DMPMonitor m = (DMPMonitor) connectionMonitors.elementAt(i);
                 if (m.conn == connection) {
                     m.shutdown();
                     connectionMonitors.removeElement(m);
@@ -313,12 +313,12 @@ public class SystemBus implements UDPMessageListener {
     }
 
     /** Monitors a BusConnection for incoming messages */
-    private class UDPMonitor implements Runnable {
+    private class DMPMonitor implements Runnable {
         BusConnection conn;
         private boolean enabled;
         private Object lock;
 
-        UDPMonitor(BusConnection connection) {
+        DMPMonitor(BusConnection connection) {
             super();
             conn = connection;
             lock = new Object();
@@ -331,8 +331,8 @@ public class SystemBus implements UDPMessageListener {
                 DataInputStream din = new DataInputStream(in);
                 while (true) {
                     synchronized (in) {
-                        UDPMessage msg = UDPMessage.recv(din);
-                        SystemBus.this.recvUDPMessage(conn, msg);
+                        DMPMessage msg = DMPMessage.recv(din);
+                        SystemBus.this.recvDMPMessage(conn, msg);
                     }
                     synchronized (lock) {
                         /* Note that shutdown() is only called from
@@ -346,7 +346,7 @@ public class SystemBus implements UDPMessageListener {
                 try {
                     conn.disconnect();
                 } catch (IOException f) {
-                    System.err.println("UDPMonitor: Disconnect failed");
+                    System.err.println("DMPMonitor: Disconnect failed");
                 }
             } finally {
                 removeConnection(conn);

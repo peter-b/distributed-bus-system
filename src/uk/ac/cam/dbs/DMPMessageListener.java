@@ -22,14 +22,14 @@ package uk.ac.cam.dbs;
 
 import java.util.EventListener;
 
-/** Handler for UDP message receipt. */
-public interface UDPMessageListener extends EventListener {
+/** Handler for DMP message receipt. */
+public interface DMPMessageListener extends EventListener {
 
-    /** Handle a received UDP message.
+    /** Handle a received DMP message.
      * @param connection The connection over which the message was
      *                   received.
-     * @param msg        The UDP message to be processed.
+     * @param msg        The DMP message to be processed.
      */
-    void recvUDPMessage(BusConnection connection, UDPMessage msg);
+    void recvDMPMessage(BusConnection connection, DMPMessage msg);
 
 }

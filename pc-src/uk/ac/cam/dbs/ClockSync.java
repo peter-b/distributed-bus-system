@@ -36,7 +36,7 @@ import java.util.Enumeration;
  */
 public class ClockSync
     extends TimeProvider
-    implements UDPMessageListener, Runnable {
+    implements DMPMessageListener, Runnable {
 
     private static final int PORT = 50123;
     private static final int UPDATE_PERIOD = 1000;
@@ -96,7 +96,7 @@ public class ClockSync
      * clockSyncThread.setDaemon(true);
      * clockSyncThread.start();</code>
      *
-     * <p>The function first binds itself to a UDP port. It then
+     * <p>The function first binds itself to a DMP port. It then
      * enters a loop which repeatedly sends out clock sync protocol
      * messages, and updates the current clock estimate based on any
      * messages that have been received.</p>
@@ -104,8 +104,8 @@ public class ClockSync
      */
     public void run() {
         try {
-            SystemBus.getSystemBus().addUDPService(this, PORT);
-        } catch (UDPBindException e) {
+            SystemBus.getSystemBus().addDMPService(this, PORT);
+        } catch (DMPBindException e) {
             System.err.println("Could not start clock sync service: " +
                                e.getMessage());
             return;
@@ -140,7 +140,7 @@ public class ClockSync
             /* Update estimate */
             updateOffset();
         }
-        SystemBus.getSystemBus().removeUDPService(this, -1);
+        SystemBus.getSystemBus().removeDMPService(this, -1);
     }
 
     /** Get the current estimate of network time.
@@ -159,8 +159,8 @@ public class ClockSync
      * @param connection The connection that the message arrived on.
      * @param msg        The message that was received.
      */
-    public void recvUDPMessage(BusConnection connection,
-                               UDPMessage msg) {
+    public void recvDMPMessage(BusConnection connection,
+                               DMPMessage msg) {
 
         RecvRecord rec = this.new RecvRecord();
 
@@ -239,9 +239,9 @@ public class ClockSync
         numToBytes(holdTime,   payload, 16, 8);
 
         /* Send message */
-        UDPMessage msg = new UDPMessage(PORT, PORT,
+        DMPMessage msg = new DMPMessage(PORT, PORT,
                                         payload);
-        SystemBus.getSystemBus().sendUDPMessage(connection, msg);
+        SystemBus.getSystemBus().sendDMPMessage(connection, msg);
 
         /* Add to record of sent messages */
         sentStore.put(new Integer(seq), new Long(now));

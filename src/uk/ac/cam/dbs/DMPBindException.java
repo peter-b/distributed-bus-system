@@ -21,19 +21,19 @@
 package uk.ac.cam.dbs;
 
 /** Signals that an error occurred while attempting to bind a service
- * to to a local UDP port.
+ * to to a local DMP port.
  */
-public class UDPBindException extends java.io.IOException {
+public class DMPBindException extends java.io.IOException {
 
-    /** Construct a new <code>UDPBindException</code> with no detailed
+    /** Construct a new <code>DMPBindException</code> with no detailed
      * message. */
-    public UDPBindException() {
+    public DMPBindException() {
         super();
     }
 
-    /** Constructs a new <code>UDPBindException</code> with the
+    /** Constructs a new <code>DMPBindException</code> with the
      * specified detail message as to why the bind error occurred. */
-    public UDPBindException(String message) {
+    public DMPBindException(String message) {
         super(message);
     }
 }
