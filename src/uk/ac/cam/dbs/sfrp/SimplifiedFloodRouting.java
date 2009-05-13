@@ -283,13 +283,17 @@ public class SimplifiedFloodRouting
         }
 
         if (!relay) {
-            /* If message that arrived has newer sequence number, update & relay */
-            /* FIXME check for wraparound */
+            /* If message that arrived has newer sequence number,
+             * update & relay. If seq is a *lot* less than the last
+             * sequence number seen, assume that it has wrapped
+             * around. */
             if (seq > record.seq) {
+                relay = true;
+            } else if (seq < record.seq - 32768) {
                 relay = true;
             }
             /* If message that arrived came by shorter route, update & relay */
-            if (hops < record.dist) {
+            if ((seq == record.seq) && (hops < record.dist)) {
                 relay = true;
             }
         }
