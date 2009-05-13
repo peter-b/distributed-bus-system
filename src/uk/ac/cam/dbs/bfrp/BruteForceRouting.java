@@ -167,7 +167,7 @@ public class BruteForceRouting
         }
 
         /* Create a DMP message */
-        DMPMessage msg = new DMPMessage(DMP_PORT, DMP_PORT, payload);
+        DMPMessage msg = new DMPMessage(DMP_PORT, payload);
 
         /* Send over each connection */
         SystemBus bus = SystemBus.getSystemBus();
@@ -312,7 +312,7 @@ public class BruteForceRouting
 
         /* Increment hop count */
         numToBytes(hops + 1, payload, 4, 2);
-        DMPMessage relaymsg = new DMPMessage(DMP_PORT, DMP_PORT, payload);
+        DMPMessage relaymsg = new DMPMessage(DMP_PORT, payload);
         SystemBus bus = SystemBus.getSystemBus();
 
         /* Relay message to all neighbours apart from sender */

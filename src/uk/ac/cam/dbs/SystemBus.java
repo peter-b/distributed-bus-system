@@ -159,13 +159,13 @@ public class SystemBus implements DMPMessageListener {
      * @param connection Connection the <code>msg</code> arrived from.
      * @param msg        Message to deliver.
      *
-     * @see DMPMessage#getToPort()
+     * @see DMPMessage#getPort()
      */
     public void recvDMPMessage(BusConnection connection, DMPMessage msg) {
         synchronized (portBindings) {
             for (int i = 0; i < portBindings.size(); i++) {
                 DMPBinding b = (DMPBinding) portBindings.elementAt(i);
-                if (msg.getToPort() == b.port) {
+                if (msg.getPort() == b.port) {
                     b.service.recvDMPMessage(connection, msg);
                     return;
                 }

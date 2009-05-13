@@ -263,8 +263,7 @@ public class ClockSync
         numToBytes(holdTime,   payload, 16, 8);
 
         /* Send message */
-        DMPMessage msg = new DMPMessage(PORT, PORT,
-                                        payload);
+        DMPMessage msg = new DMPMessage(PORT, payload);
 
         /* Add to record of sent messages */
         synchronized(sentStore) {

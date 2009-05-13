@@ -27,63 +27,53 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.EOFException;
 
-/** <p>A message sent over DMP. A message consists of a payload, with
- * source and destination ports.</p>
+/** <p>A message sent over DMP. A message consists of a payload, a
+ * service port number, and a checksum.</p>
  *
  * <p>Instances of this class are immutable: this is to ensure that they
  * can be passed between services and stored with minimum risk of them
  * being altered unexpectedly.</p>
  *
+ * <p><strong>Note:</strong> This implementation does not currently
+ * generate or verify checksums.</p>
+ *
  * @see SystemBus
  * @see DMPMessageListener
  */
 public class DMPMessage {
-    /** Port this message should be delivered to. */
-    private int to;
-    /** Port this message was sent from. */
-    private int from;
+    /** Service port number. */
+    private int port;
     /** Payload data */
     private byte[] payload;
 
     /** Create a new <code>DMPMessage</code>.
      *
-     * @param toPort   Port number the message should be delivered to.
-     * @param fromPort The port number the message was sent from.
+     * @param port The port number associated with the service
+     *             responsible for the message.
      * @param payload  The contents of the message.
      **/
-    public DMPMessage (int toPort, int fromPort, byte[] payload) {
+    public DMPMessage (int port, byte[] payload) {
 
-        to = toPort;
-        from = fromPort;
         this.payload = payload;
+        this.port = port;
 
         int len = payload.length;
 
-        if ((to >= 0x10000) || (to <= 0)) {
-            throw new IllegalArgumentException("Invalid destination port.");
-        }
-        if ((from >= 0x10000) || from < 0) {
-            throw new IllegalArgumentException("Invalid source port.");
+        if ((port >= 0x10000) || (port <= 0)) {
+            throw new IllegalArgumentException("Invalid port number.");
         }
         if (len >= 0x10000) {
             throw new IllegalArgumentException("Payload too large.");
         }
     }
 
-    /** Get the destination port.
+    /** Get the service port number.
      *
-     * @return port number the message should be delivered to.
+     * @return port number associated with the service responsible for
+     *         the message.
      **/
-    public int getToPort() {
-        return to;
-    }
-
-    /** Get the source port.
-     *
-     * @return The port number the message was sent from.
-     */
-    public int getFromPort() {
-        return from;
+    public int getPort() {
+        return port;
     }
 
     /** Get the payload data.
@@ -110,18 +100,15 @@ public class DMPMessage {
      */
     public void send(DataOutputStream out) throws IOException {
 
-        int to = getToPort();
-        int from = getFromPort();
+        int port = getPort();
         int len   = getPayload().length;
 
         /** Turn values into signed 16-bit integers */
-        to    = (to   >= 0x8000) ? (to   - 0x10000) : to;
-        from  = (from >= 0x8000) ? (from - 0x10000) : from;
+        port  = (port >= 0x8000) ? (port - 0x10000) : port;
         len   = (len  >= 0x8000) ? (len  - 0x10000) : len;
 
         synchronized (out) {
-            out.writeChar((char) from);
-            out.writeChar((char) to);
+            out.writeChar((char) port);
             out.writeChar((char) len);
             out.writeChar(0); /* FIXME Don't bother with checksum */
             out.write(getPayload(), 0, len);
@@ -139,19 +126,17 @@ public class DMPMessage {
     public static DMPMessage recv(DataInputStream in)
         throws IOException {
 
-        int from, to;
+        int port;
         byte[] buf;
         synchronized (in) {
             int len, sum;
             /* Grab header */
-            from = in.readChar();
-            to = in.readChar();
+            port = in.readChar();
             len = in.readChar();
             sum = in.readChar();
 
             /* Convert from signed char to unsigned integer */
-            from = (from < 0) ? (from + 0x10000) : from;
-            to =   (to   < 0) ? (to   + 0x10000) : to;
+            port = (port < 0) ? (port + 0x10000) : port;
             len =  (len  < 0) ? (len  + 0x10000) : len;
             sum =  (sum  < 0) ? (sum  + 0x10000) : sum;
 
@@ -169,6 +154,6 @@ public class DMPMessage {
                 read_len += status;
             }
         }
-        return new DMPMessage(to, from, buf);
+        return new DMPMessage(port, buf);
     }
 }

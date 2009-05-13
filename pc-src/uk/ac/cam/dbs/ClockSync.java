@@ -239,8 +239,7 @@ public class ClockSync
         numToBytes(holdTime,   payload, 16, 8);
 
         /* Send message */
-        DMPMessage msg = new DMPMessage(PORT, PORT,
-                                        payload);
+        DMPMessage msg = new DMPMessage(PORT, payload);
         SystemBus.getSystemBus().sendDMPMessage(connection, msg);
 
         /* Add to record of sent messages */
