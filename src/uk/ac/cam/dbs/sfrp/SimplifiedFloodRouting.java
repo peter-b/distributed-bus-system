@@ -36,8 +36,7 @@ import static uk.ac.cam.dbs.util.ByteBufferHelper.numToBytes;
  * @see uk.ac.cam.dbs.sfrp
  */
 public class SimplifiedFloodRouting
-    implements Runnable, NamingProvider, RoutingProvider,
-               DMPMessageListener {
+    implements Runnable, RoutingProvider, DMPMessageListener {
 
     int lastSeq;
     Object seqLock;
@@ -65,22 +64,6 @@ public class SimplifiedFloodRouting
         DeviceRecord rec = getDeviceRecord(dest);
         if ((rec == null) || !rec.routeValid) return null;
         return rec.hop;
-    }
-
-    /** {@inheritDoc}
-     * @param deviceName {@inheritDoc}
-     * @return {@inheritDoc}
-     */
-    public InterfaceAddress getAddressByName(String deviceName) {
-        throw new RuntimeException("Not implemented");
-    }
-
-    /** {@inheritDoc}
-     * @param address {@inheritDoc}
-     * @return {@inheritDoc}
-     */
-    public String getNameByAddress(InterfaceAddress address) {
-        throw new RuntimeException("Not implemented");
     }
 
     /** <p>The main loop method for the SFRP daemon. This should
