@@ -271,6 +271,11 @@ public class SimplifiedFloodRouting
             addrBytes[i] = payload[8+i];
         InterfaceAddress deviceAddr = new InterfaceAddress(addrBytes);
 
+        /* If this is our own message, ignore it completely. */
+        if (deviceAddr.equals(SystemBus.getSystemBus().getMainAddress())) {
+            return;
+        }
+
         DeviceRecord record = getDeviceRecord(deviceAddr);
         boolean relay = false;
         boolean newRoute = false;
