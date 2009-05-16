@@ -217,7 +217,7 @@ public class TCPIPConnectionManager implements BusConnectionServer {
      */
     public synchronized void setListenEnabled(boolean enabled) {
 
-        if (isListenEnabled()) {
+        if (isListenEnabled() && !enabled) {
             serverThread.interrupt();
             try {
                 serverThread.join();
@@ -225,7 +225,7 @@ public class TCPIPConnectionManager implements BusConnectionServer {
                 Thread.currentThread().interrupt();
             }
             serverThread = null;
-        } else {
+        } else if (!isListenEnabled() && enabled) {
             serverThread = new Thread (new TCPIPServer());
 
             /* Don't let server thread keep the program running. */
