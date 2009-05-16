@@ -52,6 +52,9 @@ public class ClockSyncDemo extends JFrame
 
         ClockSyncOptions opts = new ClockSyncOptions(args);
         final long offset = opts.initOffset;
+        if (opts.mainAddr != null) {
+            SystemBus.getSystemBus().setMainAddress(opts.mainAddr);
+        }
 
         TimeProvider intTime = new TimeProvider() {
                 public long currentTimeMillis() {
@@ -71,8 +74,6 @@ public class ClockSyncDemo extends JFrame
         try {
             TCPIPConnectionManager tcpip =
                 TCPIPConnectionManager.getConnectionManager();
-            BluetoothConnectionManager bt =
-                BluetoothConnectionManager.getConnectionManager();
 
             /* Start up routing service */
             SimplifiedFloodRouting routingService = new SimplifiedFloodRouting();
@@ -93,12 +94,16 @@ public class ClockSyncDemo extends JFrame
             }
 
             if (opts.listenBT) {
+                BluetoothConnectionManager bt =
+                    BluetoothConnectionManager.getConnectionManager();
                 bt.setListenEnabled(true);
                 System.out.println ("Listening on " +
                                     LocalDevice.getLocalDevice().getBluetoothAddress());
             }
             iter = opts.hostsBT.iterator();
             while (iter.hasNext()) {
+                BluetoothConnectionManager bt =
+                    BluetoothConnectionManager.getConnectionManager();
                 bt.connectDevice(iter.next());
             }
 
@@ -196,6 +201,7 @@ class ClockSyncOptions {
     List<String> hostsTCPIP;
     List<String> hostsBT;
     long initOffset;
+    InterfaceAddress mainAddr;
 
     public ClockSyncOptions(String[] args) {
         listenBT = false;
@@ -203,11 +209,12 @@ class ClockSyncOptions {
         hostsTCPIP = new LinkedList<String>();
         hostsBT = new LinkedList<String>();
         initOffset = 0;
+        mainAddr = null;
         parseOptions(args);
     }
 
     private void parseOptions(String[] args) {
-        Getopt g = new Getopt("clocksync-demo", args, "hBTb:t:o:");
+        Getopt g = new Getopt("clocksync-demo", args, "hBTb:t:o:a:");
         g.setOpterr(false); /* We'll print our own errors */
         int c;
         String arg;
@@ -216,6 +223,15 @@ class ClockSyncOptions {
             switch (c) {
             case 'h':
                 usage(0);
+                break;
+
+            case 'a':
+                try {
+                    mainAddr = new InterfaceAddress(g.getOptarg());
+                } catch (NumberFormatException e) {
+                    System.err.println("Malformed address: " + g.getOptarg());
+                    usage(1);
+                }
                 break;
 
             case 'B':
@@ -266,7 +282,8 @@ class ClockSyncOptions {
                            + "        -B        Accept Bluetooth connections\n"
                            + "        -b addr   Connect to Bluetooth device\n"
                            + "        -t host   Connect to TCP/IP host\n"
-                           + "        -o offset Initial clock offset (secs)\n");
+                           + "        -o offset Initial clock offset (secs)\n"
+                           + "        -a addr   Main address to use\n");
         System.exit(exitstatus);
     }
 }
