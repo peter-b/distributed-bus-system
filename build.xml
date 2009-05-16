@@ -83,14 +83,14 @@
   </target>
 
   <target name="dist" description="Create JARs for distribution"
-          depends="compile,doc">
+          depends="clean,compile,doc">
     <mkdir dir="${dist}"/>
     <jar destfile="${dist}/dbs-pc.jar"
          basedir="${build.pc}"
-         includes="uk/**/*.class"/>
+         includes="uk/ac/cam/dbs/**/*.class"/>
     <jar destfile="${dist}/dbs-nxt.jar"
          basedir="${build.nxt}"
-         includes="uk/**/*.class java/**/*.class"/>
+         includes="uk/ac/cam/dbs/**/*.class java/**/*.class"/>
     <zip destfile="${dist}/dbs-doc-pc.zip"
          basedir="${doc.pc}"/>
     <zip destfile="${dist}/dbs-doc-nxt.zip"
