@@ -64,9 +64,12 @@ public class ClockSyncDemo {
                 }
             };
         routingService.addRouteChangeListener(notifier);
-        Thread routeThread = new Thread(routingService);
-        routeThread.setDaemon(true);
-        routeThread.start();
+        try {
+            routingService.start();
+        } catch (DMPBindException e) {
+            System.err.println("Could not start routing service: " + e.getMessage());
+            return;
+        }
 
         /* Make connection */
         bt.setListenEnabled(true);

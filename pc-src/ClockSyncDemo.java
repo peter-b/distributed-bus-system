@@ -78,9 +78,7 @@ public class ClockSyncDemo extends JFrame
             /* Start up routing service */
             SimplifiedFloodRouting routingService = new SimplifiedFloodRouting();
             routingService.addRouteChangeListener(demo);
-            Thread routeThread = new Thread(routingService);
-            routeThread.setDaemon(true);
-            routeThread.start();
+            routingService.start();
 
             /* Make connection */
             Iterator<String> iter;

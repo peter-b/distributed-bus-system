@@ -26,8 +26,7 @@ import java.io.IOException;
 import uk.ac.cam.dbs.*;
 
 /** Agent for storing, forwarding and delivering bundles. */
-public class BundleAgent
-    implements Runnable {
+public class BundleAgent extends AbstractDMPDaemon {
 
     private static final int BUNDLE_DEFER = 1 << 1;
 
@@ -47,13 +46,12 @@ public class BundleAgent
     private RoutingProvider routing;
     private Object routingLock;
 
-    private BundleDmpService dmpService;
-
     private long lastTimestamp;
     private int lastSeq;
     private Object timestampLock;
 
     public BundleAgent() {
+        super(DMP_PORT);
         bundleQueue = new Vector(MAX_BUNDLES);
         endpointRegistrations = new Vector();
         queueMonitorNotifier = new Object();
@@ -71,8 +69,6 @@ public class BundleAgent
         routingLock = new Object();
 
         timestampLock = new Object();
-
-        dmpService = this.new BundleDmpService();
     }
 
     /** <p>Set the routing provider to be used when forwarding
@@ -225,15 +221,9 @@ public class BundleAgent
         }
     }
 
-    public void run() {
-        try {
-            SystemBus.getSystemBus().addDMPService(dmpService, DMP_PORT);
-        } catch (DMPBindException e) {
-            System.err.println("Could not bind DMP port: " + e.getMessage());
-            return;
-        }
+    protected void run() {
 
-        while (true) {
+        while (isEnabled()) {
             /* Process bundles */
             long timer = (1L << 63) ^ -1; /* Max long */
             for (int i = 0; i < bundleQueue.size(); i++) {
@@ -363,20 +353,18 @@ public class BundleAgent
         }
     }
 
-    private class BundleDmpService implements DMPMessageListener {
-        /** Handles a bundle arriving over DMP */
-        public void recvDMPMessage(BusConnection connection, DMPMessage msg) {
-            /* Assume one DMP message per bundle */
+    /** Handles a bundle arriving over DMP */
+    protected void messageReceived(BusConnection connection, DMPMessage msg) {
+        /* Assume one DMP message per bundle */
 
-            /* If queue 100% full: drop bundle silently */
-            if (bundleQueue.size() >= MAX_BUNDLES) return;
+        /* If queue 100% full: drop bundle silently */
+        if (bundleQueue.size() >= MAX_BUNDLES) return;
 
-            /* Parse bundle. */
-            Bundle b = new Bundle(msg.getPayload());
+        /* Parse bundle. */
+        Bundle b = new Bundle(msg.getPayload());
 
-            /* Queue bundle */
-            queueBundle(b);
-        }
+        /* Queue bundle */
+        queueBundle(b);
     }
 
     /* ***************************************** */

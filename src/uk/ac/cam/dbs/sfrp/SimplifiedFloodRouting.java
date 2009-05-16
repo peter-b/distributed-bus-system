@@ -36,7 +36,8 @@ import static uk.ac.cam.dbs.util.ByteBufferHelper.numToBytes;
  * @see uk.ac.cam.dbs.sfrp
  */
 public class SimplifiedFloodRouting
-    implements Runnable, RoutingProvider, DMPMessageListener {
+    extends AbstractDMPDaemon
+    implements RoutingProvider {
 
     int lastSeq;
     Object seqLock;
@@ -50,6 +51,7 @@ public class SimplifiedFloodRouting
 
     /** Initialise a new SFRP daemon. */
     public SimplifiedFloodRouting() {
+        super(DMP_PORT);
         lastSeq = 0;
         seqLock = new Object();
         devices = new Hashtable();
@@ -73,15 +75,8 @@ public class SimplifiedFloodRouting
      * <p>See the package documentation for example code for starting
      * a SFRP service.</p>
      */
-    public void run() {
-        try {
-            SystemBus.getSystemBus().addDMPService(this, DMP_PORT);
-        } catch (DMPBindException e) {
-            System.err.println("Could not bind DMP port: " + e.getMessage());
-            return;
-        }
-
-        while (true) {
+    protected void run() {
+        while (isEnabled()) {
             /* First, transmit messages */
             sendHelloMessages();
 
@@ -222,7 +217,7 @@ public class SimplifiedFloodRouting
      * @param conn {@inheritDoc}
      * @param msg {@inheritDoc}
      */
-    public void recvDMPMessage(BusConnection conn, DMPMessage msg) {
+    public void messageReceived(BusConnection conn, DMPMessage msg) {
         /* For now, devices don't advertise name or alternative
          * interface addresses, so the payload should be a fixed
          * size:

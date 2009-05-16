@@ -35,9 +35,7 @@
  * <pre>
  * InterfaceAddress addr = &lt;get main address for device&gt;;
  * SimplifiedFloodRouting routingService = new SimplifiedFloodRouting(addr);
- * Thread routeThread = new Thread(routingService);
- * routeThread.setDaemon(true);
- * routeThread.start();
+ * routingService.start();
  * </pre>
  *
  * <p>The service has a mechanism for notifying application code when
