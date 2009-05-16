@@ -149,18 +149,17 @@ public class SimplifiedFloodRouting
         if (mainAddress == null) return;
 
         byte[] payload = new byte[24];
-        /* Message size */
-        numToBytes(24, payload, 0, 2);
         /* Sequence number */
         int seq;
         synchronized (seqLock) {
             seq = ++lastSeq;
         }
-        numToBytes(seq % (1<<16), payload, 2, 2);
+        numToBytes(seq % (1<<16), payload, 0, 2);
         /* Hops so far = 1*/
-        numToBytes(1, payload, 4, 2);
+        numToBytes(1, payload, 2, 2);
         /* Time for which to treat HELLO as valid */
-        numToBytes(2*HELLO_TIME, payload, 6, 2);
+        numToBytes(2*HELLO_TIME, payload, 4, 2);
+        /* Skip 2 reserved bytes */
         byte[] addrBytes = mainAddress.getBytes();
         for (int i = 0; i < 16; i++) {
             payload[i+8] = addrBytes[i];
@@ -245,10 +244,10 @@ public class SimplifiedFloodRouting
          * interface addresses, so the payload should be a fixed
          * size:
          *
-         * 16  bits: message length in octets
          * 16  bits: message sequence number
          * 16  bits: number of hops so far
          * 16  bits: validity time (milliseconds)
+         * 16  bits: reserved
          * 128 bits: main address
          *
          * Total length: 24 bytes.
@@ -259,14 +258,13 @@ public class SimplifiedFloodRouting
             return;
         }
 
-        /* Read message length */
-        int size = (int) numFromBytesUnsigned(payload, 0, 2);
         /* Read message sequence number */
-        int seq = (int) numFromBytesUnsigned(payload, 2, 2);
+        int seq = (int) numFromBytesUnsigned(payload, 0, 2);
         /* Read number of hops */
-        int hops = (int) numFromBytesUnsigned(payload, 4, 2);
+        int hops = (int) numFromBytesUnsigned(payload, 2, 2);
         /* Read validity period */
-        int validTime = (int) numFromBytesUnsigned(payload, 6, 2);
+        int validTime = (int) numFromBytesUnsigned(payload, 4, 2);
+        /* Skip 2 reserved bytes */
         /* Read main address */
         byte[] addrBytes = new byte[16];
         for (int i = 0; i < 16; i++)
@@ -311,7 +309,7 @@ public class SimplifiedFloodRouting
         record.routeValid = true;
 
         /* Increment hop count */
-        numToBytes(hops + 1, payload, 4, 2);
+        numToBytes(hops + 1, payload, 2, 2);
         DMPMessage relaymsg = new DMPMessage(DMP_PORT, payload);
         SystemBus bus = SystemBus.getSystemBus();
 

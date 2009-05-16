@@ -95,6 +95,7 @@
  * <tr><td>16</td><td>Message sequence number</td></tr>
  * <tr><td>16</td><td>Hop count</td></tr>
  * <tr><td>16</td><td>Validity period (ms)</td></tr>
+ * <tr><td>16</td><td>(Reserved)</td></tr>
  * <tr><td>128</td><td>Device main address</td></tr>
  * </tbody>
  * </table>
