@@ -109,6 +109,29 @@ public class SimplifiedFloodRouting
         }
     }
 
+    /** <p>Get a list of all reachable device addresses</p>
+     *
+     * <p><strong>Warning</strong>: this is expensive, so use it sparingly.</p>
+     *
+     * @return an <code>Vector</code> of device addresses for which routes are known.
+     */
+    public Vector getKnownRoutes() {
+        Vector activeRoutes = new Vector();
+        synchronized (devices) {
+            Enumeration addresses = devices.keys();
+            while (addresses.hasMoreElements()) {
+                Object o = addresses.nextElement();
+                InterfaceAddress addr =
+                    (InterfaceAddress) o;
+                DeviceRecord rec = getDeviceRecord(addr);
+                if (rec.routeValid) {
+                    activeRoutes.addElement(addr);
+                }
+            }
+        }
+        return activeRoutes;
+    }
+
     /* Notifies all of the listeners that a route has changed */
     private void dispatchRouteChange(InterfaceAddress addr, int status) {
         synchronized (routeListeners) {
